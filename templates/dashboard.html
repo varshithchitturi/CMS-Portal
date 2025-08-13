@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Dashboard - IntelliSupport AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="header">
+        <nav class="nav">
+            <a href="{{ url_for('dashboard') }}" class="logo">🧠 IntelliSupport AI</a>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('chat') }}">AI Chat Support</a></li>
+                <li>
+                    <button id="notificationToggle" class="notification-toggle">
+                        🔔 <span class="badge" id="notificationBadge">0</span>
+                    </button>
+                </li>
+                <li class="profile-dropdown">
+                    <div class="profile-trigger" id="profileTrigger">
+                        <div class="profile-avatar">{{ session.full_name[0].upper() }}</div>
+                        <span class="profile-name">{{ session.full_name.split()[0] }}</span>
+                        <i class="dropdown-arrow">▼</i>
+                    </div>
+                    <div class="profile-dropdown-content" id="profileDropdown">
+                        <div class="profile-header">
+                            <div class="profile-avatar-large">{{ session.full_name[0].upper() }}</div>
+                            <div class="profile-info">
+                                <h4>{{ session.full_name }}</h4>
+                                <p>{{ session.email }}</p>
+                            </div>
+                        </div>
+                        <div class="profile-menu">
+                            <a href="#" id="profileDetailsLink">👤 View Profile</a>
+                            <a href="{{ url_for('dashboard') }}">📊 Dashboard</a>
+                            <a href="{{ url_for('chat') }}">🤖 AI Support</a>
+                            <div class="profile-divider"></div>
+                            <a href="{{ url_for('logout') }}" class="logout-link">🚪 Logout</a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    
+    <!-- Notification Panel -->
+    <div id="notificationPanel" class="notification-panel">
+        <div class="notification-header">
+            <h3>🔔 Notifications <span class="notification-count" id="notificationCount">0</span></h3>
+            <div class="notification-actions">
+                <button id="markAllReadBtn">Mark all as read</button>
+                <button id="closeNotificationsBtn">✕</button>
+            </div>
+        </div>
+        <div class="notification-body">
+            <div id="notificationEmpty" class="notification-empty">
+                <div>📪</div>
+                <p>No new notifications</p>
+            </div>
+            <ul class="notification-list" id="notificationList">
+                <!-- Notifications will be added here dynamically -->
+            </ul>
+        </div>
+        <div class="notification-footer">
+            <a href="#" id="viewAllNotificationsLink">View all notifications</a>
+        </div>
+    </div>
+    
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container">
+        <!-- Toast notifications will be added here dynamically -->
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">📊 Dashboard Overview</h2>
+                <p class="card-subtitle">Welcome back, {{ session.full_name }}! Quick view of your support tickets and system status.</p>
+                <div class="refresh-time">Last Updated: <span id="currentTime"></span></div>
+            </div>
+            
+            <!-- Enhanced Key Performance Indicators -->
+            <div class="dashboard-stats-container">
+                <style>
+                    .dashboard-stats-container {
+                        margin: 20px 0;
+                    }
+                    .dashboard-stats {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                        gap: 15px;
+                        margin: 0 auto;
+                        max-width: 1100px;
+                    }
+                    .stat-card {
+                        display: flex;
+                        flex-direction: column;
+                        padding: 15px;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                        transition: transform 0.2s ease;
+                    }
+                    .stat-card:hover {
+                        transform: translateY(-3px);
+                    }
+                    .stat-icon {
+                        font-size: 24px;
+                        margin-bottom: 5px;
+                    }
+                    .stat-number {
+                        font-size: 28px;
+                        font-weight: bold;
+                        margin: 5px 0;
+                    }
+                    .stat-label {
+                        font-size: 14px;
+                        color: #555;
+                    }
+                    .stat-change {
+                        font-size: 12px;
+                        margin-top: 5px;
+                        color: #777;
+                    }
+                    @media (max-width: 992px) {
+                        .dashboard-stats {
+                            grid-template-columns: repeat(3, 1fr);
+                        }
+                    }
+                    @media (max-width: 768px) {
+                        .dashboard-stats {
+                            grid-template-columns: repeat(2, 1fr);
+                        }
+                    }
+                    @media (max-width: 480px) {
+                        .dashboard-stats {
+                            grid-template-columns: 1fr;
+                        }
+                    }
+                </style>
+                <div class="dashboard-stats">
+                    <div class="stat-card primary">
+                        <div class="stat-icon">🎫</div>
+                        <div class="stat-number">{{ complaints|length }}</div>
+                        <div class="stat-label">Total Support Tickets</div>
+                        <div class="stat-change">Complete ticket history</div>
+                    </div>
+                    
+                    <div class="stat-card warning">
+                        <div class="stat-icon">⏳</div>
+                        <div class="stat-number">
+                            {{ complaints|selectattr('status', 'ne', 'Resolved')|list|length }}
+                        </div>
+                        <div class="stat-label">Active Tickets</div>
+                        <div class="stat-change">Need attention</div>
+                    </div>
+                    
+                    <div class="stat-card success">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-number">
+                            {{ complaints|selectattr('status', 'eq', 'Resolved')|list|length }}
+                        </div>
+                        <div class="stat-label">Resolved Successfully</div>
+                        <div class="stat-change">Completed tickets</div>
+                    </div>
+
+                    <div class="stat-card info">
+                        <div class="stat-icon">💬</div>
+                        <div class="stat-number">{{ user_chats|default(0) }}</div>
+                        <div class="stat-label">AI Chat Sessions</div>
+                        <div class="stat-change">Using intelligent support</div>
+                    </div>
+                    
+                    <div class="stat-card accent">
+                        <div class="stat-icon">�</div>
+                        <div class="stat-number">
+                            {% if complaints|length > 0 %}
+                                {{ "%.1f"|format((complaints|selectattr('status', 'eq', 'Resolved')|list|length / complaints|length) * 100) }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </div>
+                        <div class="stat-label">Resolution Success Rate</div>
+                        <div class="stat-change">Overall performance</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center" style="margin-bottom: 1rem;">
+                <a href="{{ url_for('chat') }}" class="btn btn-primary" style="margin-right: 0.8rem; padding: 10px 20px;">
+                    🤖 AI Support
+                </a>
+                <button onclick="refreshPage()" class="btn btn-secondary" style="padding: 10px 20px;">
+                    🔄 Refresh
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">🎫 Ticket Management</h3>
+                <p class="card-subtitle">Monitor and track your support requests</p>
+            </div>
+            
+            {% if complaints %}
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for complaint in complaints %}
+                        <tr>
+                            <td><strong style="color: #667eea;">{{ complaint.ticket_id[:8] }}</strong></td>
+                            <td style="max-width: 200px;">
+                                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    {{ complaint.title }}
+                                </div>
+                            </td>
+                            <td>
+                                <span style="background: #e3f2fd; color: #1976d2; padding: 3px 8px; border-radius: 8px; font-size: 0.8rem; font-weight: 600;">
+                                    {{ complaint.category }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="priority-{{ complaint.priority.lower() }}">
+                                    {{ complaint.priority }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="status-{{ complaint.status.lower().replace(' ', '-') }}">
+                                    {{ complaint.status }}
+                                </span>
+                            </td>
+                            <td style="color: #666; font-size: 0.85rem;">{{ complaint.created_at[:10] }}</td>
+                            <td>
+                                <a href="{{ url_for('view_ticket', ticket_id=complaint.ticket_id) }}" 
+                                   class="btn btn-primary" style="font-size: 0.8rem; padding: 6px 12px; border-radius: 6px;">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center" style="padding: 2rem;">
+                <div style="font-size: 3rem; margin-bottom: 1rem; color: #667eea;">📋</div>
+                <h3 style="color: #333; margin-bottom: 0.8rem;">No Support Tickets</h3>
+                <p style="color: #666; font-size: 1rem; margin-bottom: 1.5rem;">
+                    Get started with our AI assistant for instant support.
+                </p>
+                <a href="{{ url_for('chat') }}" class="btn btn-primary">
+                    🚀 Start AI Support
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">⚡ Quick Actions</h3>
+                <p class="card-subtitle">Access support tools and resources</p>
+            </div>
+            
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">🤖</div>
+                    <h4>AI Support</h4>
+                    <p>Get instant assistance from our intelligent chatbot.</p>
+                    <a href="{{ url_for('chat') }}" class="btn btn-primary">Launch AI</a>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature-icon">📞</div>
+                    <h4>Direct Contact</h4>
+                    <p>Connect with our expert support team.</p>
+                    <a href="mailto:support@complaint-system.com" class="btn btn-secondary">Email Support</a>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature-icon">📚</div>
+                    <h4>Help Center</h4>
+                    <p>Browse FAQs and detailed guides.</p>
+                    <button onclick="showFAQ()" class="btn btn-secondary">View FAQ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dropdown Backdrop -->
+    <div class="dropdown-backdrop" id="dropdownBackdrop" onclick="closeAllDropdowns()"></div>
+
+    <!-- Profile Details Modal -->
+    <div id="profileModal" class="modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>👤 User Profile Details</h3>
+                <span class="close" onclick="hideProfileDetails()">&times;</span>
+            </div>
+            <div class="profile-details">
+                <div class="profile-section">
+                    <div class="profile-avatar-xl" id="profileAvatar">{{ session.full_name[0].upper() }}</div>
+                    <h3 id="profileFullName">{{ session.full_name }}</h3>
+                    <p style="color: #666;" id="profileMemberSince">Member since account creation</p>
+                </div>
+                
+                <div class="profile-info-grid">
+                    <div class="info-item">
+                        <label>� Username</label>
+                        <p id="profileUsername">Loading...</p>
+                    </div>
+                    <div class="info-item">
+                        <label>�📧 Email Address</label>
+                        <p id="profileEmail">{{ session.email }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>🏠 Full Name</label>
+                        <p id="profileDisplayName">{{ session.full_name }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>📱 Phone Number</label>
+                        <p id="profilePhone">Loading...</p>
+                    </div>
+                    <div class="info-item">
+                        <label>🆔 User ID</label>
+                        <p>{{ session.user_id }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>🎫 Total Tickets</label>
+                        <p>{{ complaints|length }} tickets created</p>
+                    </div>
+                    <div class="info-item">
+                        <label>✅ Resolved Tickets</label>
+                        <p>{{ complaints|selectattr('status', 'eq', 'Resolved')|list|length }} successfully resolved</p>
+                    </div>
+                    <div class="info-item">
+                        <label>⏳ Active Tickets</label>
+                        <p>{{ complaints|selectattr('status', 'ne', 'Resolved')|list|length }} currently active</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ Modal -->
+    <div id="faqModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Frequently Asked Questions</h3>
+                <span class="close" onclick="hideFAQ()">&times;</span>
+            </div>
+            <div>
+                <h4>Q: How does the AI chatbot work?</h4>
+                <p>A: Our AI chatbot uses Google's Gemini 2.0 Flash model to understand your complaints and provide instant solutions. If it can't resolve your issue, it will create a support ticket automatically.</p>
+                
+                <h4>Q: How are tickets prioritized?</h4>
+                <p>A: Tickets are automatically prioritized based on keywords and urgency: Urgent (2-4 hours), High (1-2 days), Medium (3-5 days), Low (5-7 days).</p>
+                
+                <h4>Q: Can I track my complaint status?</h4>
+                <p>A: Yes! You can track your complaint status in real-time through this dashboard. You'll also receive notifications for status updates.</p>
+                
+                <h4>Q: What types of complaints can I file?</h4>
+                <p>A: You can file complaints for Technical issues, Billing problems, Service quality, Product defects, and General inquiries.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleProfileDropdown(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            console.log('Toggle profile dropdown called'); // Debug log
+            const dropdown = document.querySelector('.profile-dropdown');
+            const dropdownContent = document.getElementById('profileDropdown');
+            
+            if (!dropdown || !dropdownContent) {
+                console.error('Profile dropdown elements not found');
+                return;
+            }
+            
+            // Close any other open dropdowns first
+            document.querySelectorAll('.profile-dropdown.active').forEach(dd => {
+                if (dd !== dropdown) {
+                    dd.classList.remove('active');
+                }
+            });
+            
+            // Toggle dropdown with immediate effect
+            const isCurrentlyActive = dropdown.classList.contains('active');
+            
+            if (isCurrentlyActive) {
+                dropdown.classList.remove('active');
+                dropdownContent.style.display = 'none';
+                console.log('Dropdown closed');
+            } else {
+                dropdown.classList.add('active');
+                dropdownContent.style.display = 'block';
+                console.log('Dropdown opened');
+            }
+            
+            return false; // Prevent default behavior
+        }
+
+        function closeAllDropdowns() {
+            const dropdown = document.querySelector('.profile-dropdown');
+            const dropdownContent = document.getElementById('profileDropdown');
+            if (dropdown) dropdown.classList.remove('active');
+            if (dropdownContent) dropdownContent.style.display = 'none';
+        }
+        
+        function showProfileDetails(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            console.log('Loading user profile details...');
+            
+            // Fetch user profile data
+            fetch('/profile')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Profile data received:', data);
+                    
+                    if (data.success) {
+                        // Update modal elements with proper null checks
+                        const usernameEl = document.getElementById('profileUsername');
+                        const emailEl = document.getElementById('profileEmail');
+                        const displayNameEl = document.getElementById('profileDisplayName');
+                        const phoneEl = document.getElementById('profilePhone');
+                        const fullNameEl = document.getElementById('profileFullName');
+                        const avatarEl = document.getElementById('profileAvatar');
+                        const memberSinceEl = document.getElementById('profileMemberSince');
+                        
+                        if (usernameEl) usernameEl.textContent = data.username || 'N/A';
+                        if (emailEl) emailEl.textContent = data.email || 'N/A';
+                        if (displayNameEl) displayNameEl.textContent = data.full_name || 'N/A';
+                        if (phoneEl) phoneEl.textContent = data.phone || 'Not provided';
+                        if (fullNameEl) fullNameEl.textContent = data.full_name || 'N/A';
+                        if (avatarEl && data.full_name) avatarEl.textContent = data.full_name[0].toUpperCase();
+                        
+                        // Update member since info if available
+                        if (memberSinceEl) {
+                            if (data.created_at) {
+                                const joinDate = new Date(data.created_at).toLocaleDateString();
+                                memberSinceEl.textContent = `Member since ${joinDate}`;
+                            } else {
+                                memberSinceEl.textContent = 'Member since account creation';
+                            }
+                        }
+                        
+                        // Show the modal
+                        const modal = document.getElementById('profileModal');
+                        if (modal) {
+                            modal.style.display = 'block';
+                            console.log('Profile modal shown');
+                        }
+                        
+                        // Close the dropdown
+                        closeAllDropdowns();
+                    } else {
+                        console.error('Failed to load profile data:', data.message || 'Unknown error');
+                        alert('Failed to load profile data. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching profile data:', error);
+                    alert('Error loading profile. Please check your connection and try again.');
+                });
+        }
+        
+        function hideProfileDetails() {
+            document.getElementById('profileModal').style.display = 'none';
+        }
+        
+        function refreshPage() {
+            location.reload();
+        }
+        
+        function showFAQ() {
+            document.getElementById('faqModal').style.display = 'block';
+        }
+        
+        function hideFAQ() {
+            document.getElementById('faqModal').style.display = 'none';
+        }
+        
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const faqModal = document.getElementById('faqModal');
+            const profileModal = document.getElementById('profileModal');
+            
+            if (event.target === faqModal) {
+                faqModal.style.display = 'none';
+            }
+            if (event.target === profileModal) {
+                profileModal.style.display = 'none';
+            }
+        }
+        
+        // Close dropdown when pressing Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeAllDropdowns();
+            }
+        });
+        
+        // Update current time
+        function updateTime() {
+            document.getElementById('currentTime').textContent = new Date().toLocaleString();
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // Notification System Class
+class NotificationSystem {
+    constructor() {
+        this.toggle = document.getElementById('notificationToggle');
+        this.panel = document.getElementById('notificationPanel');
+        this.list = document.getElementById('notificationList');
+        this.empty = document.getElementById('notificationEmpty');
+        this.count = document.getElementById('notificationCount');
+        this.badge = document.getElementById('notificationBadge');
+        this.markAllReadBtn = document.getElementById('markAllReadBtn');
+        this.closeBtn = document.getElementById('closeNotificationsBtn');
+        this.viewAllLink = document.getElementById('viewAllNotificationsLink');
+        this.toastContainer = document.getElementById('toastContainer');
+        this.notifications = [];
+        this.unreadCount = 0;
+        this.isPanelVisible = false;
+        this.initialize();
+        this.fetchNotifications();
+        setInterval(() => this.checkForNewNotifications(), 10000);
+    }
+    initialize() {
+        this.toggle.addEventListener('click', () => this.togglePanel());
+        this.closeBtn.addEventListener('click', () => this.hidePanel());
+        this.markAllReadBtn.addEventListener('click', () => this.markAllAsRead());
+        this.viewAllLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.viewAllNotifications();
+        });
+        document.addEventListener('click', (e) => {
+            if (this.isPanelVisible && !this.panel.contains(e.target) && !this.toggle.contains(e.target)) {
+                this.hidePanel();
+            }
+        });
+    }
+    togglePanel() {
+        if (this.isPanelVisible) {
+            this.hidePanel();
+        } else {
+            this.showPanel();
+        }
+    }
+    showPanel() {
+        this.panel.classList.add('show');
+        this.isPanelVisible = true;
+    }
+    hidePanel() {
+        this.panel.classList.remove('show');
+        this.isPanelVisible = false;
+    }
+    async fetchNotifications() {
+        try {
+            const response = await fetch('/api/notifications');
+            const data = await response.json();
+            const prevIds = this.notifications ? this.notifications.map(n => n.id) : [];
+            this.notifications = data.notifications;
+            this.renderNotifications();
+            this.updateUnreadCount();
+            const newNotifications = this.notifications.filter(n => !prevIds.includes(n.id) && !n.read);
+            if (newNotifications.length > 0) {
+                this.showToast(newNotifications[0]);
+            }
+        } catch (error) {
+            console.error('Failed to fetch notifications:', error);
+        }
+    }
+    async checkForNewNotifications() {
+        try {
+            await fetch('/api/notifications/unread-count');
+            this.fetchNotifications();
+        } catch (error) {
+            console.error('Failed to check for new notifications:', error);
+        }
+    }
+    renderNotifications() {
+        this.list.innerHTML = '';
+        if (this.notifications.length === 0) {
+            this.empty.style.display = 'block';
+        } else {
+            this.empty.style.display = 'none';
+            this.notifications.forEach(notification => {
+                const item = this.createNotificationItem(notification);
+                this.list.appendChild(item);
+            });
+        }
+    }
+    createNotificationItem(notification) {
+        const item = document.createElement('li');
+        item.className = `notification-item ${notification.read ? 'read' : 'unread'}`;
+        item.dataset.id = notification.id;
+        const typeIcon = notification.icon || {
+            "info": "📋",
+            "success": "✅",
+            "warning": "⚠️",
+            "danger": "🔴"
+        }[notification.type] || "📋";
+        item.innerHTML = `
+            <div class="notification-icon ${notification.type}">${typeIcon}</div>
+            <div class="notification-content">
+                <div class="notification-title">${notification.title}</div>
+                <div class="notification-message">${notification.message}</div>
+                <div class="notification-time">${notification.time}</div>
+            </div>
+            <div class="notification-actions">
+                <button class="toggle-read-btn" title="${notification.read ? 'Mark as unread' : 'Mark as read'}">${notification.read ? '📩' : '✓'}</button>
+                <button class="delete-btn" title="Delete">🗑️</button>
+            </div>
+        `;
+        const toggleReadBtn = item.querySelector('.toggle-read-btn');
+        const deleteBtn = item.querySelector('.delete-btn');
+        toggleReadBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleRead(notification.id);
+        });
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.deleteNotification(notification.id);
+        });
+        item.addEventListener('click', () => {
+            if (!notification.read) {
+                this.markAsRead(notification.id);
+            }
+        });
+        return item;
+    }
+    addNotification(notification, showToast = false) {
+        this.notifications.unshift(notification);
+        this.renderNotifications();
+        this.updateUnreadCount();
+        if (showToast) {
+            this.showToast(notification);
+        }
+    }
+    showToast(notification) {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${notification.type}`;
+        toast.innerHTML = `
+            <div class="toast-header">
+                <div class="toast-title">
+                    <span class="toast-icon">${notification.icon}</span>
+                    ${notification.title}
+                </div>
+                <button class="toast-close">&times;</button>
+            </div>
+            <div class="toast-body">
+                ${notification.message}
+            </div>
+            <div class="toast-actions">
+                <button class="toast-secondary">Dismiss</button>
+                <button class="toast-primary">View</button>
+            </div>
+        `;
+        this.toastContainer.appendChild(toast);
+        const closeBtn = toast.querySelector('.toast-close');
+        const dismissBtn = toast.querySelector('.toast-secondary');
+        const viewBtn = toast.querySelector('.toast-primary');
+        const closeToast = () => {
+            toast.classList.add('hide');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        };
+        closeBtn.addEventListener('click', closeToast);
+        dismissBtn.addEventListener('click', closeToast);
+        viewBtn.addEventListener('click', () => {
+            this.showPanel();
+            closeToast();
+        });
+        setTimeout(closeToast, 5000);
+    }
+    async markAsRead(id) {
+        try {
+            await fetch(`/api/notifications/${id}/read`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const notification = this.notifications.find(n => n.id === id);
+            if (notification && !notification.read) {
+                notification.read = true;
+                this.renderNotifications();
+                this.updateUnreadCount();
+            }
+        } catch (error) {
+            console.error('Failed to mark notification as read:', error);
+            const notification = this.notifications.find(n => n.id === id);
+            if (notification && !notification.read) {
+                notification.read = true;
+                this.renderNotifications();
+                this.updateUnreadCount();
+            }
+        }
+    }
+    toggleRead(id) {
+        const notification = this.notifications.find(n => n.id === id);
+        if (notification) {
+            notification.read = !notification.read;
+            this.renderNotifications();
+            this.updateUnreadCount();
+        }
+    }
+    async markAllAsRead() {
+        try {
+            await fetch('/api/notifications/mark-all-read', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            this.notifications.forEach(notification => {
+                notification.read = true;
+            });
+            this.renderNotifications();
+            this.updateUnreadCount();
+        } catch (error) {
+            console.error('Failed to mark all as read:', error);
+            this.notifications.forEach(notification => {
+                notification.read = true;
+            });
+            this.renderNotifications();
+            this.updateUnreadCount();
+        }
+    }
+    async deleteNotification(id) {
+        try {
+            await fetch(`/api/notifications/${id}`, {
+                method: 'DELETE'
+            });
+            const index = this.notifications.findIndex(n => n.id === id);
+            if (index !== -1) {
+                this.notifications.splice(index, 1);
+                this.renderNotifications();
+                this.updateUnreadCount();
+            }
+        } catch (error) {
+            console.error('Failed to delete notification:', error);
+            const index = this.notifications.findIndex(n => n.id === id);
+            if (index !== -1) {
+                this.notifications.splice(index, 1);
+                this.renderNotifications();
+                this.updateUnreadCount();
+            }
+        }
+    }
+    updateUnreadCount() {
+        this.unreadCount = this.notifications.filter(n => !n.read).length;
+        this.badge.textContent = this.unreadCount;
+        this.count.textContent = this.unreadCount;
+        if (this.unreadCount > 0) {
+            this.badge.style.display = 'flex';
+        } else {
+            this.badge.style.display = 'none';
+        }
+    }
+    viewAllNotifications() {
+        alert('This would show all notifications in a full page view');
+    }
+}
+
+// Handle profile trigger clicks
+function handleProfileTriggerClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Profile trigger clicked via event listener');
+    toggleProfileDropdown(e);
+}
+
+// Handle profile details click
+function handleProfileDetailsClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Profile details link clicked via event listener');
+    showProfileDetails(e);
+}
+
+// Initialize the notification system
+let notificationSystem;
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Dashboard page loaded');
+    notificationSystem = new NotificationSystem();
+    notificationSystem.fetchNotifications();
+    
+    // Add click handler for profile dropdown
+    const profileTrigger = document.getElementById('profileTrigger');
+    if (profileTrigger) {
+        console.log('Profile trigger found, adding event listener');
+        
+        // Remove any existing listeners and add new one
+        profileTrigger.removeEventListener('click', handleProfileTriggerClick);
+        profileTrigger.addEventListener('click', handleProfileTriggerClick);
+    } else {
+        console.error('Profile trigger not found');
+    }
+    
+    // Add click handler for profile details link
+    const profileDetailsLink = document.getElementById('profileDetailsLink');
+    if (profileDetailsLink) {
+        profileDetailsLink.removeEventListener('click', handleProfileDetailsClick);
+        profileDetailsLink.addEventListener('click', handleProfileDetailsClick);
+    }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdown = document.querySelector('.profile-dropdown');
+        const dropdownContent = document.getElementById('profileDropdown');
+        if (dropdown && !dropdown.contains(event.target)) {
+            dropdown.classList.remove('active');
+            if (dropdownContent) {
+                dropdownContent.style.display = 'none';
+            }
+        }
+    });
+    
+    const dropdownContent = document.querySelector('.profile-dropdown-content');
+    if (dropdownContent) {
+        // Make sure dropdown is hidden on page load
+        dropdownContent.style.display = 'none';
+        dropdownContent.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+    
+    // Log initialization completion
+    console.log('Dashboard page profile dropdown functionality initialized');
+});
+    </script>
+</body>
+</html>

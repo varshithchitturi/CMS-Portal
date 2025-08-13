@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Support - IntelliSupport AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="header">
+        <nav class="nav">
+            <a href="{{ url_for('dashboard') }}" class="logo">� IntelliSupport AI</a>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('chat') }}">AI Chat Support</a></li>
+                <li class="profile-dropdown">
+                    <div class="profile-trigger" id="profileTrigger">
+                        <div class="profile-avatar">{{ session.full_name[0].upper() }}</div>
+                        <span class="profile-name">{{ session.full_name.split()[0] }}</span>
+                        <i class="dropdown-arrow">▼</i>
+                    </div>
+                    <div class="profile-dropdown-content" id="profileDropdown" style="display: none;">
+                        <div class="profile-header">
+                            <div class="profile-avatar-large">{{ session.full_name[0].upper() }}</div>
+                            <div class="profile-info">
+                                <h4>{{ session.full_name }}</h4>
+                                <p>{{ session.email }}</p>
+                            </div>
+                        </div>
+                        <div class="profile-menu">
+                            <a href="#" id="profileDetailsLink">👤 View Profile</a>
+                            <a href="{{ url_for('dashboard') }}">📊 Dashboard</a>
+                            <a href="{{ url_for('chat') }}">🤖 AI Support</a>
+                            <div class="profile-divider"></div>
+                            <a href="{{ url_for('logout') }}" class="logout-link">🚪 Logout</a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="container" style="max-width: 900px; padding: 1rem;">
+        <div class="card" style="margin-bottom: 1rem;">
+            <div class="card-header" style="padding: 1rem 1.5rem;">
+                <h2 class="card-title" style="font-size: 1.4rem; margin-bottom: 0.3rem;">🤖 IntelliSupport AI Assistant</h2>
+                <p class="card-subtitle" style="font-size: 0.9rem;">Get instant support or create tickets</p>
+            </div>
+            
+            <div class="chat-container">
+                <div id="chatMessages" class="chat-messages">
+                    <div class="message message-bot">
+                        <strong>🤖 AI Assistant:</strong> Hello {{ session.full_name }}! I'm here to help you with any complaints or questions. I can:
+                        <br>• Provide instant solutions for common issues
+                        <br>• Create support tickets if needed
+                        <br>• Track your existing complaints
+                        <br>• Answer questions about our services
+                        <br><br>What can I help you with today?
+                    </div>
+                </div>
+                
+                <div class="chat-input-container">
+                    <input type="text" id="userInput" class="chat-input" 
+                           placeholder="Type your complaint or question here..." 
+                           maxlength="500">
+                    <button onclick="sendMessage()" class="btn btn-primary" id="sendBtn">
+                        Send
+                    </button>
+                </div>
+                
+                <div class="mt-2">
+                    <small style="color: #666;">
+                        💡 Try saying: "I can't log into my account", "Wrong billing amount", 
+                        "Service is down", or "I need a refund"
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Quick Help Topics</h3>
+            </div>
+            
+            <div class="features">
+                <div class="feature" onclick="quickMessage('I cannot log into my account')">
+                    <div class="feature-icon">🔐</div>
+                    <h4>Login Issues</h4>
+                    <p>Can't access your account?</p>
+                </div>
+                
+                <div class="feature" onclick="quickMessage('I have a billing question about my charges')">
+                    <div class="feature-icon">💳</div>
+                    <h4>Billing Support</h4>
+                    <p>Questions about charges</p>
+                </div>
+                
+                <div class="feature" onclick="quickMessage('The service is not working properly')">
+                    <div class="feature-icon">⚡</div>
+                    <h4>Technical Issues</h4>
+                    <p>Service outages or bugs</p>
+                </div>
+                
+                <div class="feature" onclick="quickMessage('I need a refund for my recent purchase')">
+                    <div class="feature-icon">💰</div>
+                    <h4>Refund Request</h4>
+                    <p>Request money back</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ticket Creation Modal -->
+    <div id="ticketModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🎫 Create Support Ticket</h3>
+                <span class="close" onclick="hideTicketModal()">&times;</span>
+            </div>
+            <div id="ticketContent">
+                <p>Would you like me to create a support ticket for this issue?</p>
+                <div class="text-center">
+                    <button onclick="createTicket()" class="btn btn-primary">
+                        Yes, Create Ticket
+                    </button>
+                    <button onclick="hideTicketModal()" class="btn btn-secondary">
+                        No, Continue Chat
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMessage = '';
+        
+        async function sendMessage(message = null) {
+            const input = document.getElementById('userInput');
+            const chatMessages = document.getElementById('chatMessages');
+            const sendBtn = document.getElementById('sendBtn');
+            
+            const userMessage = message || input.value.trim();
+            
+            if (!userMessage) {
+                return;
+            }
+            
+            // Store current message for potential ticket creation
+            currentMessage = userMessage;
+            
+            // Add user message to chat
+            const userDiv = document.createElement('div');
+            userDiv.className = 'message message-user';
+            userDiv.innerHTML = `<strong>You:</strong> ${userMessage}`;
+            chatMessages.appendChild(userDiv);
+            
+            // Clear input and disable send button
+            input.value = '';
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<span class="loading"></span>';
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            try {
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: userMessage })
+                });
+                
+                const data = await response.json();
+                
+                // Add bot response with HTML support
+                const botDiv = document.createElement('div');
+                botDiv.className = 'message message-bot';
+                
+                // Use HTML response if available, otherwise fallback to plain text
+                const responseText = data.reply_html || data.reply;
+                botDiv.innerHTML = `<strong>🤖 AI Assistant:</strong> <div class="bot-response">${responseText}</div>`;
+                chatMessages.appendChild(botDiv);
+                
+                // Show ticket creation option if needed
+                if (data.requires_ticket || data.show_ticket_button) {
+                    const ticketDiv = document.createElement('div');
+                    ticketDiv.className = 'message message-system';
+                    ticketDiv.innerHTML = `
+                        ${data.ticket_message || 'Would you like me to create a support ticket for this issue?'}
+                        <br><br>
+                        <button onclick="showTicketModal()" class="btn btn-primary" style="font-size: 0.9rem;">
+                            🎫 Create Support Ticket
+                        </button>
+                    `;
+                    chatMessages.appendChild(ticketDiv);
+                }
+                
+            } catch (error) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'message message-bot';
+                errorDiv.innerHTML = '<strong>🤖 AI Assistant:</strong> I apologize, but I\'m experiencing technical difficulties. Let me create a support ticket for you to ensure your issue is resolved.';
+                chatMessages.appendChild(errorDiv);
+                
+                // Show ticket creation for errors
+                showTicketModal();
+            } finally {
+                // Re-enable send button
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = 'Send';
+                
+                // Scroll to bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // Focus back to input
+                input.focus();
+            }
+        }
+        
+        function quickMessage(message) {
+            document.getElementById('userInput').value = message;
+            sendMessage();
+        }
+        
+        function showTicketModal() {
+            document.getElementById('ticketModal').style.display = 'block';
+        }
+        
+        function hideTicketModal() {
+            document.getElementById('ticketModal').style.display = 'none';
+        }
+        
+        async function createTicket() {
+            const ticketContent = document.getElementById('ticketContent');
+            ticketContent.innerHTML = '<div class="text-center"><span class="loading"></span> Creating ticket...</div>';
+            
+            try {
+                const response = await fetch('/create_ticket', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: currentMessage })
+                });
+
+                if (!response.ok) {
+                    let errorText = `HTTP error! Status: ${response.status}`;
+                    try {
+                        const errorData = await response.text();
+                        console.error("Server error response:", errorData);
+                        // Display a more specific error if possible, otherwise the generic one
+                        errorText = `Failed to create ticket. Server returned: ${response.status}. Please contact support.`;
+                    } catch (e) {
+                        console.error("Could not read error response text.", e);
+                    }
+                    throw new Error(errorText);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    ticketContent.innerHTML = `
+                        <div class="alert alert-success">
+                            <h4>🎫 Ticket Created Successfully!</h4>
+                            <p><strong>Ticket ID:</strong> ${data.ticket_id}</p>
+                            <p><strong>Category:</strong> ${data.category}</p>
+                            <p><strong>Priority:</strong> ${data.priority}</p>
+                            <p>${data.message}</p>
+                        </div>
+                        <div class="text-center">
+                            <a href="/ticket/${data.ticket_id}" class="btn btn-primary">View Ticket</a>
+                            <button onclick="hideTicketModal()" class="btn btn-secondary">Continue Chat</button>
+                        </div>
+                    `;
+                    
+                    // Add success message to chat
+                    const chatMessages = document.getElementById('chatMessages');
+                    const successDiv = document.createElement('div');
+                    successDiv.className = 'message message-system';
+                    successDiv.innerHTML = `✅ Support ticket <strong>${data.ticket_id}</strong> created successfully! Our team will review your ${data.priority.toLowerCase()} priority ${data.category.toLowerCase()} issue.`;
+                    chatMessages.appendChild(successDiv);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    
+                } else {
+                     ticketContent.innerHTML = `
+                        <div class="alert alert-error">
+                            <p>${data.error || 'Failed to create ticket. Please try again or contact support directly.'}</p>
+                        </div>
+                        <div class="text-center">
+                            <button onclick="createTicket()" class="btn btn-primary">Try Again</button>
+                            <button onclick="hideTicketModal()" class="btn btn-secondary">Cancel</button>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error creating ticket:', error);
+                ticketContent.innerHTML = `
+                    <div class="alert alert-error">
+                        <p>An error occurred while creating the ticket. Please try again.</p>
+                        <p class="error-details" style="font-size: 0.8rem; margin-top: 10px;">${error.message}</p>
+                    </div>
+                    <div class="text-center">
+                        <button onclick="createTicket()" class="btn btn-primary">Try Again</button>
+                        <button onclick="hideTicketModal()" class="btn btn-secondary">Cancel</button>
+                    </div>
+                `;
+            }
+        }
+        
+        function toggleProfileDropdown(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            console.log('Toggle profile dropdown called'); // Debug log
+            const dropdown = document.querySelector('.profile-dropdown');
+            const dropdownContent = document.getElementById('profileDropdown');
+            
+            if (!dropdown || !dropdownContent) {
+                console.error('Profile dropdown elements not found');
+                return;
+            }
+            
+            // Close any other open dropdowns first
+            document.querySelectorAll('.profile-dropdown.active').forEach(dd => {
+                if (dd !== dropdown) {
+                    dd.classList.remove('active');
+                }
+            });
+            
+            // Toggle dropdown with immediate effect
+            const isCurrentlyActive = dropdown.classList.contains('active');
+            
+            if (isCurrentlyActive) {
+                dropdown.classList.remove('active');
+                dropdownContent.style.display = 'none';
+                console.log('Dropdown closed');
+            } else {
+                dropdown.classList.add('active');
+                dropdownContent.style.display = 'block';
+                console.log('Dropdown opened');
+            }
+            
+            return false; // Prevent default behavior
+        }
+        
+        function showProfileDetails(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            console.log('Show profile details called');
+            
+            // Here you would implement showing the profile details modal
+            alert('Profile details: {{ session.full_name }} ({{ session.email }})');
+            // Close the dropdown
+            const dropdown = document.querySelector('.profile-dropdown');
+            const dropdownContent = document.getElementById('profileDropdown');
+            if (dropdown) dropdown.classList.remove('active');
+            if (dropdownContent) dropdownContent.style.display = 'none';
+        }
+        
+        // Handle profile trigger clicks
+        function handleProfileTriggerClick(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Profile trigger clicked via event listener');
+            toggleProfileDropdown(e);
+        }
+        
+        // Handle profile details click
+        function handleProfileDetailsClick(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Profile details link clicked via event listener');
+            showProfileDetails(e);
+        }
+        
+        // Initialize page functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Chat page loaded');
+            
+            // Add click handler for profile dropdown
+            const profileTrigger = document.getElementById('profileTrigger');
+            if (profileTrigger) {
+                console.log('Profile trigger found, adding event listener');
+                
+                // Remove any existing listeners and add new one
+                profileTrigger.removeEventListener('click', handleProfileTriggerClick);
+                profileTrigger.addEventListener('click', handleProfileTriggerClick);
+            } else {
+                console.error('Profile trigger not found');
+            }
+            
+            // Add click handler for profile details link
+            const profileDetailsLink = document.getElementById('profileDetailsLink');
+            if (profileDetailsLink) {
+                profileDetailsLink.removeEventListener('click', handleProfileDetailsClick);
+                profileDetailsLink.addEventListener('click', handleProfileDetailsClick);
+            }
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                const dropdown = document.querySelector('.profile-dropdown');
+                const dropdownContent = document.getElementById('profileDropdown');
+                if (dropdown && !dropdown.contains(event.target)) {
+                    dropdown.classList.remove('active');
+                    if (dropdownContent) {
+                        dropdownContent.style.display = 'none';
+                    }
+                }
+            });
+            
+            const dropdownContent = document.querySelector('.profile-dropdown-content');
+            if (dropdownContent) {
+                // Make sure dropdown is hidden on page load
+                dropdownContent.style.display = 'none';
+                dropdownContent.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            }
+            
+            // Log initialization completion
+            console.log('Chat page profile dropdown functionality initialized');
+        });
+        
+        // Allow Enter key to send message
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('ticketModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // Auto-focus on input when page loads
+        document.getElementById('userInput').focus();
+    </script>
+</body>
+</html>

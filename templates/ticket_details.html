@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Details - {{ complaint.ticket_id }} | IntelliSupport AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="header">
+        <nav class="nav">
+            <a href="{% if session.is_admin %}{{ url_for('admin_dashboard') }}{% else %}{{ url_for('dashboard') }}{% endif %}" class="logo">🧠 IntelliSupport AI</a>
+            <ul class="nav-links">
+                {% if session.is_admin %}
+                <li><a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a></li>
+                <li><a href="{{ url_for('admin_agents') }}">Agent Management</a></li>
+                {% else %}
+                <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('chat') }}">AI Chat Support</a></li>
+                {% endif %}
+                <li class="profile-dropdown">
+                    <div class="profile-trigger" onclick="toggleProfileDropdown()">
+                        <div class="profile-avatar {% if session.is_admin %}admin-avatar{% endif %}">{{ session.full_name[0].upper() }}</div>
+                        <span class="profile-name {% if session.is_admin %}admin-name{% endif %}">{{ session.full_name.split()[0] }}</span>
+                        <i class="dropdown-arrow">▼</i>
+                    </div>
+                    <div class="profile-dropdown-content" id="profileDropdown">
+                        <div class="profile-header {% if session.is_admin %}admin-header{% endif %}">
+                            <div class="profile-avatar-large {% if session.is_admin %}admin-avatar-large{% endif %}">{{ session.full_name[0].upper() }}</div>
+                            <div class="profile-info">
+                                <h4>{{ session.full_name }}</h4>
+                                <p>{{ session.email }}</p>
+                                {% if session.is_admin %}
+                                <span class="admin-badge">Administrator</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="profile-menu">
+                            <a href="#" onclick="showProfileDetails()">👤 {% if session.is_admin %}Admin {% endif %}Profile</a>
+                            {% if session.is_admin %}
+                            <a href="{{ url_for('admin_dashboard') }}">⚡ Admin Dashboard</a>
+                            <a href="{{ url_for('admin_agents') }}">👥 Agent Management</a>
+                            {% else %}
+                            <a href="{{ url_for('dashboard') }}">📊 Dashboard</a>
+                            <a href="{{ url_for('chat') }}">🤖 AI Support</a>
+                            {% endif %}
+                            <div class="profile-divider"></div>
+                            <a href="{{ url_for('logout') }}" class="logout-link">🚪 Logout</a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">🎫 Comprehensive Ticket Details</h2>
+                <p class="card-subtitle">Tracking ID: <strong>{{ complaint.ticket_id }}</strong> | Complete support case overview</p>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; margin-bottom: 3rem;">
+                <div style="background: #f8f9fa; padding: 2rem; border-radius: 15px; border-left: 4px solid #667eea;">
+                    <h4 style="color: #333; margin-bottom: 1.5rem; font-size: 1.3rem; font-weight: 700;">📋 Ticket Information</h4>
+                    <div class="form-group">
+                        <label class="form-label" style="color: #555; font-weight: 600;">Title:</label>
+                        <p style="background: white; padding: 12px; border-radius: 8px; margin-top: 8px; border-left: 3px solid #667eea;">{{ complaint.title }}</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" style="color: #555; font-weight: 600;">Category:</label>
+                        <p style="background: white; padding: 12px; border-radius: 8px; margin-top: 8px;">
+                            <span style="background: #e3f2fd; color: #1976d2; padding: 6px 12px; border-radius: 12px; font-weight: 600;">
+                                {{ complaint.category }}
+                            </span>
+                        </p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" style="color: #555; font-weight: 600;">Priority Level:</label>
+                        <p style="background: white; padding: 12px; border-radius: 8px; margin-top: 8px;">
+                            <span class="priority-{{ complaint.priority.lower() }}">
+                                {{ complaint.priority }}
+                            </span>
+                        </p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Status:</label>
+                        <span class="status-{{ complaint.status.lower().replace(' ', '-') }}">
+                            {{ complaint.status }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4>⏱️ Timeline</h4>
+                    <div class="form-group">
+                        <label class="form-label">Created:</label>
+                        <p>{{ complaint.created_at }}</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Last Updated:</label>
+                        <p>{{ complaint.updated_at }}</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Estimated Resolution:</label>
+                        <p>{{ complaint.estimated_resolution_time }}</p>
+                    </div>
+                    
+                    {% if complaint.resolved_at %}
+                    <div class="form-group">
+                        <label class="form-label">Resolved:</label>
+                        <p>{{ complaint.resolved_at }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">📝 Description:</label>
+                <div class="form-control" style="background: #f8f9fa; min-height: 100px; white-space: pre-wrap;">{{ complaint.description }}</div>
+            </div>
+            
+            {% if complaint.assigned_to %}
+            <div class="form-group">
+                <label class="form-label">👤 Assigned To:</label>
+                <p>{{ complaint.assigned_to }}</p>
+            </div>
+            {% endif %}
+            
+            {% if complaint.resolution_notes %}
+            <div class="form-group">
+                <label class="form-label">✅ Resolution Notes:</label>
+                <div class="alert alert-success">{{ complaint.resolution_notes }}</div>
+            </div>
+            {% endif %}
+            
+            <div class="text-center">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Back to Dashboard</a>
+                {% if complaint.status != 'Resolved' %}
+                <a href="{{ url_for('chat') }}" class="btn btn-primary">💬 Continue in Chat</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Agent Responses Section -->
+        {% if agent_responses %}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">💬 Agent Responses</h3>
+                <p class="card-subtitle">Communication from our support team</p>
+            </div>
+            
+            <div class="agent-responses">
+                {% for response in agent_responses %}
+                <div class="response-item">
+                    <div class="response-header">
+                        <div class="agent-info">
+                            <strong>{{ response.name }}</strong>
+                            <span class="agent-role">{{ response.specialization }}</span>
+                        </div>
+                        <div class="response-meta">
+                            <span class="response-type type-{{ response.response_type.lower() }}">{{ response.response_type }}</span>
+                            <span class="response-date">{{ response.created_at }}</span>
+                        </div>
+                    </div>
+                    <div class="response-content">
+                        {{ response.response_html|safe }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">📊 Ticket Progress</h3>
+            </div>
+            
+            <div class="timeline">
+                <div class="timeline-item active">
+                    <div class="timeline-marker">✅</div>
+                    <div class="timeline-content">
+                        <h4>Ticket Created</h4>
+                        <p>{{ complaint.created_at }}</p>
+                    </div>
+                </div>
+                
+                {% if complaint.assigned_to %}
+                <div class="timeline-item active">
+                    <div class="timeline-marker">👤</div>
+                    <div class="timeline-content">
+                        <h4>Assigned to Agent</h4>
+                        <p>Assigned to: {{ complaint.assigned_to }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if complaint.status == 'In Progress' %}
+                <div class="timeline-item active">
+                    <div class="timeline-marker">⚙️</div>
+                    <div class="timeline-content">
+                        <h4>In Progress</h4>
+                        <p>Agent is working on your issue</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if complaint.status == 'Under Review' %}
+                <div class="timeline-item active">
+                    <div class="timeline-marker">🔍</div>
+                    <div class="timeline-content">
+                        <h4>Under Review</h4>
+                        <p>Issue is being reviewed by our team</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if complaint.status == 'Resolved' %}
+                <div class="timeline-item active">
+                    <div class="timeline-marker">✅</div>
+                    <div class="timeline-content">
+                        <h4>Resolved</h4>
+                        <p>{{ complaint.resolved_at }}</p>
+                    </div>
+                </div>
+                {% else %}
+                <div class="timeline-item">
+                    <div class="timeline-marker">⏳</div>
+                    <div class="timeline-content">
+                        <h4>Resolution</h4>
+                        <p>Pending</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if complaint.status != 'Resolved' %}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">💬 Need More Help?</h3>
+            </div>
+            
+            <p>If you need to provide additional information or have questions about this ticket, you can:</p>
+            
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">🤖</div>
+                    <h4>Chat with AI</h4>
+                    <p>Continue the conversation with our AI assistant</p>
+                    <a href="{{ url_for('chat') }}" class="btn btn-primary">Start Chat</a>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature-icon">📧</div>
+                    <h4>Email Support</h4>
+                    <p>Send additional details via email</p>
+                    <a href="mailto:support@complaint-system.com?subject=Ticket {{ complaint.ticket_id }}" class="btn btn-secondary">Email Us</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <style>
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 1rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e1e5e9;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 2rem;
+            padding-left: 2rem;
+        }
+        
+        .timeline-marker {
+            position: absolute;
+            left: -2.5rem;
+            top: 0;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            background: #f8f9fa;
+            border: 2px solid #e1e5e9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+        
+        .timeline-item.active .timeline-marker {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+        
+        .timeline-content h4 {
+            margin: 0 0 0.5rem 0;
+            color: #333;
+        }
+        
+        .timeline-content p {
+            margin: 0;
+            color: #666;
+        }
+
+        /* Agent Responses Styling */
+        .agent-responses {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .response-item {
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            background: #f8f9fa;
+        }
+
+        .response-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #e1e5e9;
+            background: #fff;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .agent-info strong {
+            color: #333;
+            font-size: 1rem;
+        }
+
+        .agent-role {
+            color: #666;
+            font-size: 0.85rem;
+            margin-left: 0.5rem;
+            padding: 0.2rem 0.5rem;
+            background: #e9ecef;
+            border-radius: 12px;
+        }
+
+        .response-meta {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .response-type {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .type-update { background: #cce5ff; color: #004085; }
+        .type-solution { background: #d4edda; color: #155724; }
+        .type-request { background: #fff3cd; color: #856404; }
+        .type-resolution { background: #d1ecf1; color: #0c5460; }
+
+        .response-date {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        .response-content {
+            padding: 1rem;
+            line-height: 1.6;
+        }
+
+        .response-content h1, .response-content h2, .response-content h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .response-content p {
+            margin-bottom: 0.5rem;
+        }
+
+        .response-content ul, .response-content ol {
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+        }
+
+        .response-content code {
+            background: #f1f3f4;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .response-content blockquote {
+            border-left: 4px solid #667eea;
+            margin: 1rem 0;
+            padding-left: 1rem;
+            color: #666;
+        }
+    </style>
+    
+    <script>
+        function toggleProfileDropdown() {
+            const dropdown = document.querySelector('.profile-dropdown');
+            
+            // Toggle dropdown
+            if (dropdown.classList.contains('active')) {
+                dropdown.classList.remove('active');
+            } else {
+                dropdown.classList.add('active');
+            }
+            
+            // Close dropdown when clicking outside
+            setTimeout(() => {
+                document.addEventListener('click', function closeOnOutsideClick(event) {
+                    if (!dropdown.contains(event.target)) {
+                        dropdown.classList.remove('active');
+                        document.removeEventListener('click', closeOnOutsideClick);
+                    }
+                });
+            }, 10);
+        }
+        
+        function showProfileDetails() {
+            // You can add a profile modal here if needed
+            alert('Profile details: {{ session.full_name }} ({{ session.email }})');
+            // Close the dropdown
+            document.querySelector('.profile-dropdown').classList.remove('active');
+        }
+    </script>
+</body>
+</html>

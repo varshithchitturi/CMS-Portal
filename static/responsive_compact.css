@@ -1,0 +1,120 @@
+/* Compact Responsive Styles */
+
+/* Mobile Optimizations for Compact Containers */
+@media (max-width: 768px) {
+    /* Login Page Mobile */
+    .login-container {
+        max-width: 340px;
+        padding: 0.5rem;
+    }
+    
+    .login-card {
+        padding: 1.25rem;
+        border-radius: 12px;
+    }
+    
+    .login-title {
+        font-size: 1.4rem;
+    }
+    
+    .login-logo {
+        font-size: 2rem;
+    }
+    
+    /* Chat Container Mobile */
+    .chat-container {
+        height: 400px;
+        max-width: 100%;
+    }
+    
+    .chat-messages {
+        max-height: 300px;
+        padding: 0.6rem;
+    }
+    
+    /* Profile Modal Mobile */
+    .modal-responsive,
+    .modal-large {
+        width: 98%;
+        height: 90vh;
+        margin: 2% auto;
+    }
+    
+    .profile-details {
+        padding: 1rem;
+    }
+    
+    .profile-info-grid {
+        grid-template-columns: 1fr;
+        gap: 0.8rem;
+    }
+    
+    .profile-avatar-xl {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+}
+
+/* Small Mobile Optimizations */
+@media (max-width: 480px) {
+    .login-container {
+        max-width: 300px;
+    }
+    
+    .login-card {
+        padding: 1rem;
+    }
+    
+    .login-title {
+        font-size: 1.3rem;
+    }
+    
+    .modern-input {
+        font-size: 0.85rem;
+        padding: 0.7rem 0.8rem 0.7rem 2.5rem !important;
+    }
+    
+    .input-icon {
+        left: 0.8rem;
+        font-size: 0.9rem;
+    }
+    
+    .chat-container {
+        height: 350px;
+    }
+    
+    .chat-messages {
+        max-height: 260px;
+    }
+}
+
+/* Tablet Optimizations */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .login-container {
+        max-width: 400px;
+    }
+    
+    .chat-container {
+        max-width: 800px;
+        height: 480px;
+    }
+    
+    .modal-responsive,
+    .modal-large {
+        width: 95%;
+        height: 92vh;
+    }
+}
+
+/* Large Screen Optimizations */
+@media (min-width: 1200px) {
+    .chat-container {
+        max-width: 1000px;
+        height: 500px;
+    }
+    
+    .chat-messages {
+        max-height: 380px;
+    }
+}

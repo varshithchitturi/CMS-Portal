@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - IntelliSupport AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-logo">⚡</div>
+                <h1 class="login-title">IntelliSupport AI</h1>
+                <p class="login-subtitle">Sign in to your account</p>
+            </div>
+            
+            <style>
+                /* Mobile responsive styles for login page */
+                @media (max-width: 768px) {
+                    .login-container {
+                        padding: 10px;
+                        margin-top: 0;
+                        height: 100vh;
+                        display: flex;
+                        align-items: center;
+                    }
+                    
+                    .login-card {
+                        width: 100%;
+                        max-width: 100%;
+                        margin: 0;
+                        box-shadow: none;
+                        border-radius: 0;
+                    }
+                    
+                    .demo-accounts {
+                        padding: 15px;
+                    }
+                    
+                    .login-footer {
+                        padding: 15px;
+                    }
+                }
+            </style>
+            
+            <div id="alert-container"></div>
+            
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="username" class="form-label">Username</label>
+                    <div class="input-container">
+                        <span class="input-icon">👤</span>
+                        <input type="text" id="username" name="username" class="form-control modern-input" required placeholder="Enter your username">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <div class="input-container">
+                        <span class="input-icon">🔐</span>
+                        <input type="password" id="password" name="password" class="form-control modern-input" required placeholder="Enter your password">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary modern-btn">
+                    <span id="login-text">Sign In</span>
+                    <span id="login-loading" class="loading hidden"></span>
+                </button>
+            </form>
+            
+            <div class="login-footer">
+                <p>Don't have an account? <a href="{{ url_for('register') }}" class="login-link">Create Account</a></p>
+                <p><a href="{{ url_for('index') }}" class="login-link">← Back to Home</a></p>
+            </div>
+            
+            <div class="demo-accounts">
+                <h4>🚀 Quick Access</h4>
+                <div class="demo-grid">
+                    <div class="demo-item">
+                        <span class="demo-role">Admin</span>
+                        <span class="demo-creds">admin / admin123</span>
+                    </div>
+                    <div class="demo-item">
+                        <span class="demo-role">User</span>
+                        <span class="demo-creds">Create new account</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const loginBtn = document.querySelector('button[type="submit"]');
+            const loginText = document.getElementById('login-text');
+            const loginLoading = document.getElementById('login-loading');
+            const alertContainer = document.getElementById('alert-container');
+            
+            // Show loading state
+            loginText.style.display = 'none';
+            loginLoading.classList.remove('hidden');
+            loginBtn.disabled = true;
+            
+            const formData = {
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value
+            };
+            
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alertContainer.innerHTML = '<div class="alert alert-success">Login successful! Redirecting...</div>';
+                    setTimeout(() => {
+                        window.location.href = data.redirect;
+                    }, 1000);
+                } else {
+                    alertContainer.innerHTML = `<div class="alert alert-error">${data.message}</div>`;
+                }
+            } catch (error) {
+                alertContainer.innerHTML = '<div class="alert alert-error">An error occurred. Please try again.</div>';
+            } finally {
+                // Reset button state
+                loginText.style.display = 'inline';
+                loginLoading.classList.add('hidden');
+                loginBtn.disabled = false;
+            }
+        });
+        
+        // Clear alerts when user starts typing
+        ['username', 'password'].forEach(id => {
+            document.getElementById(id).addEventListener('input', function() {
+                document.getElementById('alert-container').innerHTML = '';
+            });
+        });
+    </script>
+</body>
+</html>

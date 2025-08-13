@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliSupport AI - Smart Customer Support Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-logo">⚡</div>
+                <h1 class="hero-title">IntelliSupport AI</h1>
+                <p class="hero-subtitle">Intelligent Customer Support Platform</p>
+                <p class="hero-description">Experience next-generation customer support with AI-driven complaint resolution, smart ticket management, and real-time analytics.</p>
+                
+                <div class="hero-buttons">
+                    <a href="{{ url_for('login') }}" class="btn btn-primary btn-large">
+                        <span class="btn-icon">🚀</span>
+                        Login to Dashboard
+                    </a>
+                    <a href="{{ url_for('register') }}" class="btn btn-secondary btn-large">
+                        <span class="btn-icon">👤</span>
+                        Create Account
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">🤖</div>
+                <h3>AI-Powered Chatbot</h3>
+                <p>Our intelligent chatbot powered by Gemini 2.0 Flash understands your complaints, provides instant solutions, and creates support tickets when needed.</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">🎫</div>
+                <h3>Smart Ticketing System</h3>
+                <p>Automatic ticket generation with AI-based categorization, priority assignment, and intelligent routing to the right department.</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">📊</div>
+                <h3>Real-time Tracking</h3>
+                <p>Track your complaint status in real-time with automated notifications and estimated resolution times.</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">⚡</div>
+                <h3>Instant Resolution</h3>
+                <p>Get immediate solutions for common issues through our AI knowledge base before escalating to human support.</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">👨‍💼</div>
+                <h3>Admin Dashboard</h3>
+                <p>Comprehensive admin panel with analytics, ticket management, and AI-assisted assignment based on agent expertise.</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">🔔</div>
+                <h3>Smart Notifications</h3>
+                <p>Automated escalation and notification system ensures no complaint goes unresolved.</p>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h2 class="card-title">System Features</h2>
+                <p class="card-subtitle">Advanced AI/ML capabilities for superior customer service</p>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                <div>
+                    <h4>🔐 User Authentication</h4>
+                    <ul>
+                        <li>Secure user registration and login</li>
+                        <li>Profile management</li>
+                        <li>Session management</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4>🤖 NLP Processing</h4>
+                    <ul>
+                        <li>Natural language understanding</li>
+                        <li>Intent recognition</li>
+                        <li>Sentiment analysis</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4>📈 Analytics & Reporting</h4>
+                    <ul>
+                        <li>Performance metrics</li>
+                        <li>Resolution time tracking</li>
+                        <li>Category-wise analysis</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4>⚙️ AI Automation</h4>
+                    <ul>
+                        <li>Intelligent categorization</li>
+                        <li>Priority assignment</li>
+                        <li>Auto-escalation rules</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card cta-section">
+            <div class="text-center">
+                <div class="cta-icon">🚀</div>
+                <h3 class="cta-title">Ready to Transform Your Customer Support?</h3>
+                <p class="cta-description">Join thousands of businesses who trust IntelliSupport AI for seamless complaint management and exceptional customer experiences.</p>
+                <div class="hero-buttons">
+                    <a href="{{ url_for('register') }}" class="btn btn-primary btn-large">
+                        <span class="btn-icon">✨</span>
+                        Get Started Free
+                    </a>
+                    <a href="{{ url_for('login') }}" class="btn btn-secondary btn-large">
+                        <span class="btn-icon">🔑</span>
+                        Sign In
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add some interactive effects
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate feature cards on scroll
+            const features = document.querySelectorAll('.feature');
+            
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+            
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.style.transform = 'translateY(0)';
+                        entry.target.style.opacity = '1';
+                    }
+                });
+            }, observerOptions);
+            
+            features.forEach(function(feature) {
+                feature.style.transform = 'translateY(30px)';
+                feature.style.opacity = '0';
+                feature.style.transition = 'transform 0.6s ease, opacity 0.6s ease';
+                observer.observe(feature);
+            });
+        });
+    </script>
+</body>
+</html>

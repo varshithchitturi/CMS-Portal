@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - IntelliSupport AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="header">
+        <nav class="nav">
+            <a href="{{ url_for('admin_dashboard') }}" class="logo">⚡ IntelliSupport Admin</a>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('admin_dashboard') }}" class="active">Admin Dashboard</a></li>
+                <li><a href="{{ url_for('admin_agents') }}">Agent Management</a></li>
+                <li>
+                    <button id="notificationToggle" class="notification-toggle">
+                        🔔 <span class="badge" id="notificationBadge">0</span>
+                    </button>
+                </li>
+                <li class="profile-dropdown">
+                    <div class="profile-trigger" id="profileTrigger">
+                        <div class="profile-avatar admin-avatar">{{ session.full_name[0].upper() }}</div>
+                        <span class="profile-name admin-name">{{ session.full_name.split()[0] }}</span>
+                        <i class="dropdown-arrow">▼</i>
+                    </div>
+                    <div class="profile-dropdown-content" id="profileDropdown">
+                        <div class="profile-header admin-header">
+                            <div class="profile-avatar-large admin-avatar-large">{{ session.full_name[0].upper() }}</div>
+                            <div class="profile-info">
+                                <h4>{{ session.full_name }}</h4>
+                                <p>{{ session.email }}</p>
+                                <span class="admin-badge">Administrator</span>
+                            </div>
+                        </div>
+                        <div class="profile-menu">
+                            <a href="#" id="profileDetailsLink">👤 Admin Profile</a>
+                            <a href="{{ url_for('admin_dashboard') }}">⚡ Admin Dashboard</a>
+                            <a href="{{ url_for('admin_agents') }}">👥 Agent Management</a>
+                            <div class="profile-divider"></div>
+                            <a href="{{ url_for('logout') }}" class="logout-link">🚪 Logout</a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Notification Panel -->
+    <div id="notificationPanel" class="notification-panel">
+        <div class="notification-header">
+            <h3>🔔 Notifications <span class="notification-count" id="notificationCount">0</span></h3>
+            <div class="notification-actions">
+                <button id="markAllReadBtn">Mark all as read</button>
+                <button id="closeNotificationsBtn">✕</button>
+            </div>
+        </div>
+        <div class="notification-body">
+            <div id="notificationEmpty" class="notification-empty">
+                <div>📪</div>
+                <p>No new notifications</p>
+            </div>
+            <ul class="notification-list" id="notificationList">
+                <!-- Notifications will be added here dynamically -->
+            </ul>
+        </div>
+        <div class="notification-footer">
+            <a href="#" id="viewAllNotificationsLink">View all notifications</a>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container">
+        <!-- Toast notifications will be added here dynamically -->
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">🎯 Advanced Analytics Dashboard</h2>
+                <p class="card-subtitle">Comprehensive real-time monitoring and management system for support operations</p>
+                <div class="refresh-time">Last Updated: <span id="currentTime"></span></div>
+            </div>
+            
+            <!-- Enhanced Key Performance Indicators -->
+            <div class="dashboard-stats-container">
+                <style>
+                    .dashboard-stats-container {
+                        margin: 20px 0;
+                    }
+                    .dashboard-stats {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                        gap: 15px;
+                        margin: 0 auto;
+                        max-width: 1100px;
+                    }
+                    .stat-card {
+                        display: flex;
+                        flex-direction: column;
+                        padding: 15px;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                        transition: transform 0.2s ease;
+                    }
+                    .stat-card:hover {
+                        transform: translateY(-3px);
+                    }
+                    .stat-icon {
+                        font-size: 24px;
+                        margin-bottom: 5px;
+                    }
+                    .stat-number {
+                        font-size: 28px;
+                        font-weight: bold;
+                        margin: 5px 0;
+                    }
+                    .stat-label {
+                        font-size: 14px;
+                        color: #555;
+                    }
+                    .stat-change {
+                        font-size: 12px;
+                        margin-top: 5px;
+                        color: #777;
+                    }
+                    @media (max-width: 992px) {
+                        .dashboard-stats {
+                            grid-template-columns: repeat(3, 1fr);
+                        }
+                    }
+                    @media (max-width: 768px) {
+                        .dashboard-stats {
+                            grid-template-columns: repeat(2, 1fr);
+                        }
+                    }
+                    @media (max-width: 480px) {
+                        .dashboard-stats {
+                            grid-template-columns: 1fr;
+                        }
+                    }
+                </style>
+                <div class="dashboard-stats">
+                    <div class="stat-card primary">
+                        <div class="stat-icon">🎫</div>
+                        <div class="stat-number">{{ stats.total_complaints }}</div>
+                        <div class="stat-label">Total Support Tickets</div>
+                        <div class="stat-change">+{{ stats.today_complaints }} created today</div>
+                    </div>
+                    
+                    <div class="stat-card warning">
+                        <div class="stat-icon">⏳</div>
+                        <div class="stat-number">{{ stats.open_complaints }}</div>
+                        <div class="stat-label">Active Tickets</div>
+                        <div class="stat-change">{{ stats.urgent_tickets }} marked urgent</div>
+                    </div>
+                    
+                    <div class="stat-card success">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-number">{{ stats.resolved_complaints }}</div>
+                        <div class="stat-label">Resolved Successfully</div>
+                        <div class="stat-change">{{ stats.avg_resolution_days }}d average resolution</div>
+                    </div>
+
+                    <div class="stat-card info">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-number">{{ stats.total_users }}</div>
+                        <div class="stat-label">Registered Users</div>
+                        <div class="stat-change">{{ stats.active_chats_today }} AI chats today</div>
+                    </div>
+                    
+                    <div class="stat-card accent">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-number">
+                            {% if stats.total_complaints > 0 %}
+                                {{ "%.1f"|format((stats.resolved_complaints / stats.total_complaints) * 100) }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </div>
+                        <div class="stat-label">Resolution Success Rate</div>
+                        <div class="stat-change">+{{ stats.week_complaints }} this week</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <style>
+                .charts-container {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 20px;
+                    margin: 30px auto;
+                    max-width: 1100px;
+                }
+                .chart-card {
+                    background-color: #ffffff;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+                    padding: 20px;
+                    transition: transform 0.3s ease, box-shadow 0.3s ease;
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                }
+                .chart-card:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.12);
+                }
+                .chart-card h3 {
+                    color: #444;
+                    font-size: 18px;
+                    margin-bottom: 15px;
+                    padding-bottom: 10px;
+                    border-bottom: 1px solid #eaeaea;
+                    text-align: center;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .chart-card h3:before {
+                    margin-right: 8px;
+                    font-size: 20px;
+                }
+                .priority-chart h3:before {
+                    content: '🔄';
+                }
+                .category-chart h3:before {
+                    content: '📊';
+                }
+                .status-chart h3:before {
+                    content: '📈';
+                }
+                .chart-container {
+                    flex-grow: 1;
+                    position: relative;
+                }
+                @media (max-width: 992px) {
+                    .charts-container {
+                        grid-template-columns: repeat(2, 1fr);
+                    }
+                }
+                @media (max-width: 767px) {
+                    .charts-container {
+                        grid-template-columns: 1fr;
+                    }
+                }
+            </style>
+            <div class="charts-container">
+                <div class="chart-card priority-chart">
+                    <h3>Priority Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="priorityChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-card category-chart">
+                    <h3>Category Breakdown</h3>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-card status-chart">
+                    <h3>Status Overview</h3>
+                    <div class="chart-container">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <style>
+                .recent-activity {
+                    margin: 30px auto;
+                    max-width: 1100px;
+                    background-color: #ffffff;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+                    padding: 20px;
+                }
+                .recent-activity h3 {
+                    color: #444;
+                    font-size: 20px;
+                    margin-bottom: 15px;
+                    padding-bottom: 12px;
+                    border-bottom: 1px solid #eaeaea;
+                }
+                .activity-list {
+                    max-height: 350px;
+                    overflow-y: auto;
+                    scrollbar-width: thin;
+                }
+                .activity-item {
+                    display: flex;
+                    align-items: center;
+                    padding: 12px;
+                    border-radius: 8px;
+                    margin-bottom: 10px;
+                    background-color: #f9f9f9;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                }
+                .activity-item:hover {
+                    transform: translateX(3px);
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+                }
+                .activity-icon {
+                    width: 35px;
+                    height: 35px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-right: 15px;
+                    flex-shrink: 0;
+                }
+                .activity-icon.priority-urgent {
+                    background-color: rgba(244, 67, 54, 0.15);
+                    color: #F44336;
+                }
+                .activity-icon.priority-high {
+                    background-color: rgba(255, 152, 0, 0.15);
+                    color: #FF9800;
+                }
+                .activity-icon.priority-medium {
+                    background-color: rgba(33, 150, 243, 0.15);
+                    color: #2196F3;
+                }
+                .activity-icon.priority-low {
+                    background-color: rgba(76, 175, 80, 0.15);
+                    color: #4CAF50;
+                }
+                .activity-content {
+                    flex: 1;
+                }
+                .activity-title {
+                    font-weight: 600;
+                    margin-bottom: 5px;
+                    color: #333;
+                }
+                .activity-meta {
+                    display: flex;
+                    flex-wrap: wrap;
+                    font-size: 13px;
+                    color: #666;
+                }
+                .activity-meta span {
+                    margin-right: 12px;
+                    display: flex;
+                    align-items: center;
+                }
+                .activity-meta span:before {
+                    margin-right: 4px;
+                }
+                .ticket-id:before {
+                    content: '🎫';
+                }
+                .user-name:before {
+                    content: '👤';
+                }
+                .status {
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    font-weight: 600;
+                    display: inline-flex;
+                    align-items: center;
+                }
+                .timestamp:before {
+                    content: '⏱️';
+                }
+                .status-registered {
+                    background-color: rgba(255, 152, 0, 0.15);
+                    color: #FF9800;
+                    padding: 3px 8px;
+                    border-radius: 12px;
+                    font-weight: 600;
+                }
+                .status-in-progress {
+                    background-color: rgba(33, 150, 243, 0.15);
+                    color: #2196F3;
+                    padding: 3px 8px;
+                    border-radius: 12px;
+                    font-weight: 600;
+                }
+                .status-under-review {
+                    background-color: rgba(118, 75, 162, 0.15);
+                    color: #764ba2;
+                    padding: 3px 8px;
+                    border-radius: 12px;
+                    font-weight: 600;
+                }
+                .status-resolved {
+                    background-color: rgba(76, 175, 80, 0.15);
+                    color: #4CAF50;
+                    padding: 3px 8px;
+                    border-radius: 12px;
+                    font-weight: 600;
+                }
+                .activity-actions {
+                    margin-left: 10px;
+                }
+                .activity-actions .btn {
+                    padding: 5px 12px;
+                    font-size: 13px;
+                    border-radius: 4px;
+                }
+            </style>
+            <div class="recent-activity">
+                <h3>🕒 Recent Ticket Activity</h3>
+                <div class="activity-list">
+                    {% for ticket in stats.recent_tickets %}
+                    <div class="activity-item">
+                        <div class="activity-icon priority-{{ ticket.priority.lower() }}">
+                            {% if ticket.priority == 'Urgent' %}🔴
+                            {% elif ticket.priority == 'High' %}🟠
+                            {% elif ticket.priority == 'Medium' %}🟡
+                            {% else %}🟢{% endif %}
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">{{ ticket.title }}</div>
+                            <div class="activity-meta">
+                                <span class="ticket-id">#{{ ticket.ticket_id }}</span>
+                                <span class="user-name">{{ ticket.user_name }}</span>
+                                <span class="status status-{{ ticket.status.lower().replace(' ', '-') }}">📊 {{ ticket.status }}</span>
+                                <span class="timestamp">{{ ticket.created_at }}</span>
+                            </div>
+                        </div>
+                        <div class="activity-actions">
+                            <a href="{{ url_for('view_ticket', ticket_id=ticket.ticket_id) }}" class="btn btn-sm btn-primary">View</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tickets Management Section -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">🎯 Active Ticket Management</h3>
+                <div class="card-actions">
+                    <button onclick="refreshData()" class="btn btn-primary">🔄 Refresh</button>
+                    <button onclick="exportData()" class="btn btn-secondary">📊 Export Data</button>
+                </div>
+            </div>
+            
+            <style>
+                .active-tickets-container {
+                    max-height: 600px;
+                    overflow-y: auto;
+                    overflow-x: auto;
+                    border: 1px solid #e1e5e9;
+                    border-radius: 8px;
+                    scrollbar-width: thin;
+                    scrollbar-color: #667eea #f1f1f1;
+                    position: relative;
+                }
+                
+                .active-tickets-container::-webkit-scrollbar {
+                    width: 8px;
+                    height: 8px;
+                }
+                
+                .active-tickets-container::-webkit-scrollbar-track {
+                    background: #f1f1f1;
+                    border-radius: 4px;
+                }
+                
+                .active-tickets-container::-webkit-scrollbar-thumb {
+                    background: #667eea;
+                    border-radius: 4px;
+                }
+                
+                .active-tickets-container::-webkit-scrollbar-thumb:hover {
+                    background: #5a6fd8;
+                }
+                
+                .active-tickets-container .complaints-table {
+                    margin-bottom: 0;
+                    border: none;
+                    width: 100%;
+                    min-width: 800px; /* Ensure horizontal scroll when needed */
+                }
+                
+                .active-tickets-container .complaints-table thead th {
+                    position: sticky;
+                    top: 0;
+                    background-color: #f8f9fa;
+                    z-index: 10;
+                    border-bottom: 2px solid #e1e5e9;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                    white-space: nowrap;
+                }
+                
+                .active-tickets-container .complaints-table tbody tr:hover {
+                    background-color: #f8f9fa;
+                }
+                
+                /* Scroll indicator */
+                .active-tickets-container::after {
+                    content: "↕ Scroll to view more tickets";
+                    position: absolute;
+                    bottom: 10px;
+                    right: 15px;
+                    background: rgba(102, 126, 234, 0.9);
+                    color: white;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    font-size: 11px;
+                    pointer-events: none;
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                }
+                
+                .active-tickets-container:hover::after {
+                    opacity: 1;
+                }
+                
+                @media (max-width: 768px) {
+                    .active-tickets-container {
+                        max-height: 450px;
+                    }
+                    
+                    .active-tickets-container .complaints-table {
+                        min-width: 600px;
+                    }
+                }
+            </style>
+            
+            <div class="active-tickets-container">
+                <table class="complaints-table">
+                    <thead>
+                        <tr>
+                            <th>Ticket ID</th>
+                            <th>User</th>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for complaint in complaints %}
+                        <tr class="priority-{{ complaint.priority.lower() }}">
+                            <td>
+                                <strong>{{ complaint.ticket_id }}</strong>
+                            </td>
+                            <td>
+                                <div class="user-info">
+                                    <div class="user-name">{{ complaint.full_name }}</div>
+                                    <div class="user-email">{{ complaint.email }}</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="complaint-title">{{ complaint.title }}</div>
+                                <div class="complaint-preview">{{ complaint.description[:100] }}...</div>
+                            </td>
+                            <td>
+                                <span class="category-badge category-{{ complaint.category.lower() }}">
+                                    {{ complaint.category }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="priority-badge priority-{{ complaint.priority.lower() }}">
+                                    {% if complaint.priority == 'Urgent' %}🔴
+                                    {% elif complaint.priority == 'High' %}🟠
+                                    {% elif complaint.priority == 'Medium' %}🟡
+                                    {% else %}🟢{% endif %}
+                                    {{ complaint.priority }}
+                                </span>
+                            </td>
+                            <td>
+                                <select class="status-select" onchange="updateTicketStatus('{{ complaint.ticket_id }}', this.value)">
+                                    <option value="Registered" {% if complaint.status == 'Registered' %}selected{% endif %}>Registered</option>
+                                    <option value="In Progress" {% if complaint.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                    <option value="Under Review" {% if complaint.status == 'Under Review' %}selected{% endif %}>Under Review</option>
+                                    <option value="Resolved" {% if complaint.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                                </select>
+                            </td>
+                            <td>
+                                <div class="date-info">
+                                    <div class="created-date">{{ complaint.created_at.split(' ')[0] }}</div>
+                                    <div class="created-time">{{ complaint.created_at.split(' ')[1] }}</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="{{ url_for('view_ticket', ticket_id=complaint.ticket_id) }}" 
+                                       class="btn btn-sm btn-primary">👁️ View</a>
+                                    <button onclick="assignTicket('{{ complaint.ticket_id }}')" 
+                                            class="btn btn-sm btn-secondary">👤 Assign</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Update current time
+        function updateTime() {
+            document.getElementById('currentTime').textContent = new Date().toLocaleString();
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Chart configurations
+        const chartColors = {
+            primary: '#667eea',
+            secondary: '#764ba2', 
+            success: '#4CAF50',
+            warning: '#FF9800',
+            error: '#F44336',
+            info: '#2196F3'
+        };
+
+        // Priority Chart
+        const priorityData = {{ stats.priority_stats | tojson }};
+        const priorityCtx = document.getElementById('priorityChart').getContext('2d');
+        new Chart(priorityCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(priorityData),
+                datasets: [{
+                    data: Object.values(priorityData),
+                    backgroundColor: [
+                        chartColors.error,    // Urgent
+                        chartColors.warning,  // High
+                        chartColors.info,     // Medium
+                        chartColors.success   // Low
+                    ],
+                    borderColor: '#ffffff',
+                    borderWidth: 2,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Category Chart
+        const categoryData = {{ stats.category_stats | tojson }};
+        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+        new Chart(categoryCtx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(categoryData),
+                datasets: [{
+                    label: 'Complaints',
+                    data: Object.values(categoryData),
+                    backgroundColor: chartColors.primary,
+                    borderColor: chartColors.primary,
+                    borderWidth: 1,
+                    borderRadius: 6,
+                    barPercentage: 0.6,
+                    hoverBackgroundColor: '#7f94f1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Tickets: ${context.raw}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 11
+                            }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+
+        // Status Chart
+        const statusData = {{ stats.status_stats | tojson }};
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        new Chart(statusCtx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(statusData),
+                datasets: [{
+                    data: Object.values(statusData),
+                    backgroundColor: [
+                        chartColors.warning,  // Registered
+                        chartColors.info,     // In Progress
+                        chartColors.secondary, // Under Review
+                        chartColors.success   // Resolved
+                    ],
+                    borderColor: '#ffffff',
+                    borderWidth: 2,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            usePointStyle: true,
+                            pointStyle: 'rectRounded',
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Admin Functions
+        async function updateTicketStatus(ticketId, newStatus) {
+            try {
+                const response = await fetch('/admin/update_ticket', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ticket_id: ticketId,
+                        status: newStatus
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('Ticket status updated successfully!', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showNotification('Failed to update ticket status', 'error');
+                }
+            } catch (error) {
+                showNotification('Error updating ticket status', 'error');
+            }
+        }
+
+        function assignTicket(ticketId) {
+            const agents = [
+                'G. Leena',
+                'B. Balu', 
+                'K. Rahul',
+                'R. Charshima',
+                'Lakshmi'
+            ];
+            
+            let assignOptions = 'Assign ticket to:\n\n';
+            agents.forEach((agent, index) => {
+                assignOptions += `${index + 1}. ${agent}\n`;
+            });
+            assignOptions += '\nEnter agent number (1-5):';
+            
+            const selection = prompt(assignOptions);
+            if (selection && selection >= 1 && selection <= 5) {
+                const selectedAgent = agents[selection - 1];
+                
+                fetch('/admin/assign_ticket', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        ticket_id: ticketId, 
+                        agent_name: selectedAgent 
+                    })
+                }).then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        showNotification(`Ticket ${ticketId} assigned to ${selectedAgent}`, 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showNotification('Failed to assign ticket', 'error');
+                    }
+                }).catch(error => {
+                    showNotification('Error assigning ticket', 'error');
+                });
+            }
+        }
+
+        function refreshData() {
+            location.reload();
+        }
+
+        function exportData() {
+            // Export functionality
+            showNotification('Export feature coming soon!', 'info');
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            refreshData();
+        }, 30000);
+    </script>
+</body>
+</html>
+            </div>
+            
+            <div class="text-center mb-3">
+                <button onclick="refreshDashboard()" class="btn btn-primary">🔄 Refresh</button>
+                <button onclick="exportData()" class="btn btn-secondary">📊 Export Data</button>
+                <button onclick="showAnalytics()" class="btn btn-secondary">📈 Analytics</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">🎫 All Tickets Management</h3>
+                <p class="card-subtitle">Manage and assign tickets efficiently</p>
+            </div>
+            
+            <div class="mb-2">
+                <label for="statusFilter" class="form-label">Filter by Status:</label>
+                <select id="statusFilter" class="form-control" onchange="filterTickets()">
+                    <option value="">All Statuses</option>
+                    <option value="Registered">Registered</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Under Review">Under Review</option>
+                    <option value="Resolved">Resolved</option>
+                </select>
+            </div>
+            
+            {% if complaints %}
+            <div class="table-container">
+                <table class="table" id="complaintsTable">
+                    <thead>
+                        <tr>
+                            <th>Ticket ID</th>
+                            <th>User</th>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Assigned To</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for complaint in complaints %}
+                        <tr data-status="{{ complaint.status }}">
+                            <td><strong>{{ complaint.ticket_id }}</strong></td>
+                            <td>
+                                <div>{{ complaint.full_name }}</div>
+                                <small style="color: #666;">{{ complaint.email }}</small>
+                            </td>
+                            <td>{{ complaint.title[:30] }}{% if complaint.title|length > 30 %}...{% endif %}</td>
+                            <td>{{ complaint.category }}</td>
+                            <td>
+                                <span class="priority-{{ complaint.priority.lower() }}">
+                                    {{ complaint.priority }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="status status-{{ complaint.status.lower().replace(' ', '-') }}">
+                                    📊 {{ complaint.status }}
+                                </span>
+                            </td>
+                            <td>{{ complaint.created_at[:16] }}</td>
+                            <td>{{ complaint.assigned_to or 'Unassigned' }}</td>
+                            <td>
+                                <button onclick="openTicketModal('{{ complaint.ticket_id }}')" 
+                                        class="btn btn-primary" style="font-size: 0.8rem; padding: 4px 8px;">
+                                    Manage
+                                </button>
+                                <a href="{{ url_for('view_ticket', ticket_id=complaint.ticket_id) }}" 
+                                   class="btn btn-secondary" style="font-size: 0.8rem; padding: 4px 8px;">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center p-3">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📋</div>
+                <h3>No Complaints Found</h3>
+                <p>No complaints have been filed yet.</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">📊 Priority & Category Analysis</h3>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <div>
+                    <h4>Priority Breakdown (Open Tickets)</h4>
+                    <div class="analytics-list">
+                        {% for priority, count in stats.priority_stats.items() %}
+                        <div class="analytics-item">
+                            <span class="priority-{{ priority.lower() }}">{{ priority }}</span>
+                            <span class="analytics-count">{{ count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div>
+                    <h4>Category Breakdown (All Tickets)</h4>
+                    <div class="analytics-list">
+                        {% for category, count in stats.category_stats.items() %}
+                        <div class="analytics-item">
+                            <span>{{ category }}</span>
+                            <span class="analytics-count">{{ count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Profile Modal -->
+    <div id="adminProfileModal" class="modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>👨‍💼 Administrator Profile</h3>
+                <span class="close" onclick="hideAdminProfile()">&times;</span>
+            </div>
+            <div class="profile-details">
+                <div class="profile-section">
+                    <div class="profile-avatar-xl admin-avatar-xl" id="adminProfileAvatar">{{ session.full_name[0].upper() }}</div>
+                    <h3 id="adminProfileFullName">{{ session.full_name }}</h3>
+                    <p style="color: #666;" id="adminProfileMemberSince">Administrator</p>
+                </div>
+                
+                <div class="profile-info-grid">
+                    <div class="info-item">
+                        <label>👤 Username</label>
+                        <p id="adminProfileUsername">Loading...</p>
+                    </div>
+                    <div class="info-item">
+                        <label>📧 Email Address</label>
+                        <p id="adminProfileEmail">{{ session.email }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>🏠 Full Name</label>
+                        <p id="adminProfileDisplayName">{{ session.full_name }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>📱 Phone Number</label>
+                        <p id="adminProfilePhone">Loading...</p>
+                    </div>
+                    <div class="info-item">
+                        <label>🔐 Access Level</label>
+                        <p><span class="admin-badge">Administrator</span></p>
+                    </div>
+                    <div class="info-item">
+                        <label>🆔 Admin ID</label>
+                        <p>{{ session.user_id }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ticket Management Modal -->
+    <div id="ticketModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🎫 Manage Ticket</h3>
+                <span class="close" onclick="closeTicketModal()">&times;</span>
+            </div>
+            <div id="ticketModalContent">
+                <form id="updateTicketForm">
+                    <input type="hidden" id="modalTicketId" name="ticket_id">
+                    
+                    <div class="form-group">
+                        <label for="modalStatus" class="form-label">Status:</label>
+                        <select id="modalStatus" name="status" class="form-control">
+                            <option value="Registered">Registered</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Under Review">Under Review</option>
+                            <option value="Resolved">Resolved</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modalAssignedTo" class="form-label">Assign To:</label>
+                        <select id="modalAssignedTo" name="assigned_to" class="form-control">
+                            <option value="">Select Agent</option>
+                            <option value="John Doe - Technical">John Doe - Technical</option>
+                            <option value="Jane Smith - Billing">Jane Smith - Billing</option>
+                            <option value="Mike Johnson - Service">Mike Johnson - Service</option>
+                            <option value="Sarah Wilson - General">Sarah Wilson - General</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modalResolutionNotes" class="form-label">Resolution Notes:</label>
+                        <textarea id="modalResolutionNotes" name="resolution_notes" 
+                                  class="form-control" rows="3" 
+                                  placeholder="Enter resolution details (required for resolved status)"></textarea>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary">Update Ticket</button>
+                        <button type="button" onclick="closeTicketModal()" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Modal -->
+    <div id="analyticsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📈 Detailed Analytics</h3>
+                <span class="close" onclick="closeAnalyticsModal()">&times;</span>
+            </div>
+            <div id="analyticsContent">
+                <div class="loading text-center">Loading analytics...</div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .analytics-list {
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .analytics-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e1e5e9;
+        }
+        
+        .analytics-item:last-child {
+            border-bottom: none;
+        }
+        
+        .analytics-count {
+            font-weight: bold;
+            color: #667eea;
+        }
+    </style>
+
+    <script>
+        function refreshDashboard() {
+            location.reload();
+        }
+        
+        function filterTickets() {
+            const filter = document.getElementById('statusFilter').value;
+            const rows = document.querySelectorAll('#complaintsTable tbody tr');
+            
+            rows.forEach(row => {
+                const status = row.getAttribute('data-status');
+                if (!filter || status === filter) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        function openTicketModal(ticketId) {
+            document.getElementById('modalTicketId').value = ticketId;
+            document.getElementById('ticketModal').style.display = 'block';
+        }
+        
+        function closeTicketModal() {
+            document.getElementById('ticketModal').style.display = 'none';
+        }
+        
+        async function showAnalytics() {
+            document.getElementById('analyticsModal').style.display = 'block';
+            document.getElementById('analyticsContent').innerHTML = '<div class="loading text-center">🔄 Loading detailed analytics...</div>';
+            
+            try {
+                const response = await fetch('/api/analytics/detailed');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const analytics = result.analytics;
+                    
+                    let content = `
+                        <div class="analytics-overview">
+                            <h4>📊 System Overview</h4>
+                            <div class="dashboard-stats">
+                                <div class="stat-card">
+                                    <div class="stat-number">${analytics.basic_stats.total_tickets}</div>
+                                    <div class="stat-label">Total Tickets</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">${analytics.basic_stats.active_tickets}</div>
+                                    <div class="stat-label">Active Tickets</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">${analytics.basic_stats.resolved_tickets}</div>
+                                    <div class="stat-label">Resolved</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">${analytics.basic_stats.unassigned_tickets}</div>
+                                    <div class="stat-label">Unassigned</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="analytics-section">
+                            <h4>🚨 Priority Distribution</h4>
+                            <div class="analytics-list">
+                    `;
+                    
+                    for (const [priority, count] of Object.entries(analytics.priority_distribution || {})) {
+                        const percentage = ((count / analytics.basic_stats.total_tickets) * 100).toFixed(1);
+                        content += `
+                            <div class="analytics-item">
+                                <span class="priority-${priority.toLowerCase()}">${priority}</span>
+                                <div class="analytics-progress">
+                                    <div class="progress-bar" style="width: ${percentage}%"></div>
+                                </div>
+                                <span class="analytics-count">${count} (${percentage}%)</span>
+                            </div>
+                        `;
+                    }
+                    
+                    content += `
+                            </div>
+                        </div>
+                        
+                        <div class="analytics-section">
+                            <h4>📂 Category Breakdown</h4>
+                            <div class="analytics-list">
+                    `;
+                    
+                    for (const [category, count] of Object.entries(analytics.category_distribution || {})) {
+                        const percentage = ((count / analytics.basic_stats.total_tickets) * 100).toFixed(1);
+                        content += `
+                            <div class="analytics-item">
+                                <span>${category}</span>
+                                <div class="analytics-progress">
+                                    <div class="progress-bar" style="width: ${percentage}%"></div>
+                                </div>
+                                <span class="analytics-count">${count} (${percentage}%)</span>
+                            </div>
+                        `;
+                    }
+                    
+                    content += `
+                            </div>
+                        </div>
+                        
+                        <div class="analytics-section">
+                            <h4>👥 Agent Workload</h4>
+                            <div class="analytics-list">
+                    `;
+                    
+                    analytics.agent_workload.forEach(agent => {
+                        content += `
+                            <div class="analytics-item agent-workload">
+                                <span>${agent.agent}</span>
+                                <div class="workload-details">
+                                    <small>Total: ${agent.total_tickets} | Active: ${agent.active_tickets} | Resolved: ${agent.resolved_tickets}</small>
+                                </div>
+                                <span class="analytics-count">${agent.total_tickets}</span>
+                            </div>
+                        `;
+                    });
+                    
+                    content += `
+                            </div>
+                        </div>
+                        
+                        <div class="analytics-section">
+                            <h4>⏱️ Performance Metrics</h4>
+                            <div class="performance-metrics">
+                                <div class="metric-item">
+                                    <span class="metric-label">Average Resolution Time</span>
+                                    <span class="metric-value">${analytics.avg_resolution_time} hours</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">Resolution Rate</span>
+                                    <span class="metric-value">${((analytics.basic_stats.resolved_tickets / analytics.basic_stats.total_tickets) * 100).toFixed(1)}%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="analytics-footer">
+                            <small>📅 Generated: ${new Date(result.generated_at).toLocaleString()}</small>
+                        </div>
+                    `;
+                    
+                    document.getElementById('analyticsContent').innerHTML = content;
+                } else {
+                    document.getElementById('analyticsContent').innerHTML = '<div class="error text-center">❌ Failed to load analytics data</div>';
+                }
+            } catch (error) {
+                console.error('Analytics error:', error);
+                document.getElementById('analyticsContent').innerHTML = 
+                    `<div class="error text-center">
+                        <h4>❌ Analytics Error</h4>
+                        <p>Failed to load analytics data: ${error.message || 'Unknown error'}</p>
+                        <button class="btn btn-secondary btn-sm" onclick="showAnalytics()">Try Again</button>
+                    </div>`;
+            }
+        }
+        
+        function closeAnalyticsModal() {
+            document.getElementById('analyticsModal').style.display = 'none';
+        }
+        
+        async function exportData() {
+            const exportModal = document.createElement('div');
+            exportModal.className = 'modal';
+            exportModal.style.display = 'block';
+            exportModal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>📊 Export Ticket Data</h3>
+                        <span class="close" onclick="this.closest('.modal').remove()">&times;</span>
+                    </div>
+                    <div style="padding: 1rem;">
+                        <div class="form-group">
+                            <label>Export Type:</label>
+                            <select id="exportType" class="form-control">
+                                <option value="all">All Tickets</option>
+                                <option value="active">Active Tickets Only</option>
+                                <option value="resolved">Resolved Tickets Only</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Format:</label>
+                            <select id="exportFormat" class="form-control">
+                                <option value="json">JSON</option>
+                                <option value="csv">CSV</option>
+                            </select>
+                        </div>
+                        <div class="text-center" style="margin-top: 1rem;">
+                            <button onclick="performExport()" class="btn btn-primary">📥 Download Export</button>
+                            <button onclick="this.closest('.modal').remove()" class="btn btn-secondary">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(exportModal);
+        }
+
+        async function performExport() {
+            const exportType = document.getElementById('exportType').value;
+            const format = document.getElementById('exportFormat').value;
+            
+            try {
+                const response = await fetch(`/api/export?type=${exportType}&format=${format}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (format === 'csv') {
+                        // Download CSV file
+                        const blob = new Blob([data.data], { type: 'text/csv' });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = data.filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                        
+                        showNotification(`✅ Successfully exported ${data.count} tickets as CSV`, 'success');
+                    } else {
+                        // Download JSON file
+                        const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `tickets_${exportType}_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.json`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                        
+                        showNotification(`✅ Successfully exported ${data.count} tickets as JSON`, 'success');
+                    }
+                    
+                    // Close modal
+                    document.querySelector('.modal:last-child').remove();
+                } else {
+                    showNotification('❌ Export failed. Please try again.', 'error');
+                }
+            } catch (error) {
+                console.error('Export error:', error);
+                showNotification('❌ Export failed. Please check your connection.', 'error');
+            }
+        }
+        
+        // Handle ticket update form submission
+        document.getElementById('updateTicketForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                ticket_id: document.getElementById('modalTicketId').value,
+                status: document.getElementById('modalStatus').value,
+                assigned_to: document.getElementById('modalAssignedTo').value,
+                resolution_notes: document.getElementById('modalResolutionNotes').value
+            };
+            
+            // Validate resolution notes for resolved status
+            if (formData.status === 'Resolved' && !formData.resolution_notes.trim()) {
+                alert('Resolution notes are required when marking a ticket as resolved.');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/admin/update_ticket', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Ticket updated successfully!');
+                    closeTicketModal();
+                    location.reload();
+                } else {
+                    alert('Failed to update ticket.');
+                }
+            } catch (error) {
+                alert('An error occurred while updating the ticket.');
+            }
+        });
+        
+        function toggleProfileDropdown(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            console.log('Toggle profile dropdown called'); // Debug log
+            const dropdown = document.querySelector('.profile-dropdown');
+            
+            if (!dropdown) {
+                console.error('Profile dropdown element not found');
+                return;
+            }
+            
+            // Close any other open dropdowns first
+            document.querySelectorAll('.profile-dropdown.active').forEach(dd => {
+                if (dd !== dropdown) {
+                    dd.classList.remove('active');
+                }
+            });
+            
+            // Toggle dropdown with immediate effect
+            const isCurrentlyActive = dropdown.classList.contains('active');
+            
+            if (isCurrentlyActive) {
+                dropdown.classList.remove('active');
+                console.log('Dropdown closed');
+            } else {
+                dropdown.classList.add('active');
+                console.log('Dropdown opened');
+            }
+            
+            return false; // Prevent default behavior
+        }
+        
+        function showProfileDetails(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            console.log('Loading admin profile details...');
+            
+            // Fetch admin profile data
+            fetch('/profile')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Profile data received:', data);
+                    
+                    if (data.success) {
+                        // Update modal elements with proper null checks
+                        const usernameEl = document.getElementById('adminProfileUsername');
+                        const emailEl = document.getElementById('adminProfileEmail');
+                        const displayNameEl = document.getElementById('adminProfileDisplayName');
+                        const phoneEl = document.getElementById('adminProfilePhone');
+                        const fullNameEl = document.getElementById('adminProfileFullName');
+                        const avatarEl = document.getElementById('adminProfileAvatar');
+                        const memberSinceEl = document.getElementById('adminProfileMemberSince');
+                        
+                        if (usernameEl) usernameEl.textContent = data.username || 'N/A';
+                        if (emailEl) emailEl.textContent = data.email || 'N/A';
+                        if (displayNameEl) displayNameEl.textContent = data.full_name || 'N/A';
+                        if (phoneEl) phoneEl.textContent = data.phone || 'Not provided';
+                        if (fullNameEl) fullNameEl.textContent = data.full_name || 'N/A';
+                        if (avatarEl && data.full_name) avatarEl.textContent = data.full_name[0].toUpperCase();
+                        
+                        // Update member since info if available
+                        if (memberSinceEl) {
+                            if (data.created_at) {
+                                const joinDate = new Date(data.created_at).toLocaleDateString();
+                                memberSinceEl.textContent = `Administrator since ${joinDate}`;
+                            } else {
+                                memberSinceEl.textContent = 'Administrator';
+                            }
+                        }
+                        
+                        // Show the modal
+                        const modal = document.getElementById('adminProfileModal');
+                        if (modal) {
+                            modal.style.display = 'block';
+                            console.log('Profile modal shown');
+                        }
+                        
+                        // Close the dropdown
+                        const dropdown = document.querySelector('.profile-dropdown');
+                        if (dropdown) {
+                            dropdown.classList.remove('active');
+                        }
+                    } else {
+                        console.error('Failed to load admin profile data:', data.message || 'Unknown error');
+                        alert('Failed to load profile data. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching admin profile data:', error);
+                    alert('Error loading profile. Please check your connection and try again.');
+                });
+        }
+        
+        function hideAdminProfile() {
+            document.getElementById('adminProfileModal').style.display = 'none';
+        }
+
+
+        // Notification System Class (copied and adapted from dashboard.html)
+        class NotificationSystem {
+            constructor() {
+                // DOM Elements
+                this.toggle = document.getElementById('notificationToggle');
+                this.panel = document.getElementById('notificationPanel');
+                this.list = document.getElementById('notificationList');
+                this.empty = document.getElementById('notificationEmpty');
+                this.count = document.getElementById('notificationCount');
+                this.badge = document.getElementById('notificationBadge');
+                this.markAllReadBtn = document.getElementById('markAllReadBtn');
+                this.closeBtn = document.getElementById('closeNotificationsBtn');
+                this.viewAllLink = document.getElementById('viewAllNotificationsLink');
+                this.toastContainer = document.getElementById('toastContainer');
+
+                // State
+                this.notifications = [];
+                this.unreadCount = 0;
+                this.isPanelVisible = false;
+
+                // Initialize
+                this.initialize();
+                this.fetchNotifications();
+
+                // Set up polling for new notifications
+                setInterval(() => this.checkForNewNotifications(), 10000); // Check every 10 seconds
+            }
+
+            initialize() {
+                // Toggle panel visibility
+                this.toggle.addEventListener('click', () => this.togglePanel());
+                this.closeBtn.addEventListener('click', () => this.hidePanel());
+                this.markAllReadBtn.addEventListener('click', () => this.markAllAsRead());
+                this.viewAllLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.viewAllNotifications();
+                });
+                document.addEventListener('click', (e) => {
+                    if (this.isPanelVisible && 
+                        !this.panel.contains(e.target) && 
+                        !this.toggle.contains(e.target)) {
+                        this.hidePanel();
+                    }
+                });
+            }
+
+            togglePanel() {
+                if (this.isPanelVisible) {
+                    this.hidePanel();
+                } else {
+                    this.showPanel();
+                }
+            }
+            showPanel() {
+                this.panel.classList.add('show');
+                this.isPanelVisible = true;
+            }
+            hidePanel() {
+                this.panel.classList.remove('show');
+                this.isPanelVisible = false;
+            }
+            async fetchNotifications() {
+                try {
+                    const response = await fetch('/api/notifications');
+                    const data = await response.json();
+                    const prevIds = this.notifications ? this.notifications.map(n => n.id) : [];
+                    this.notifications = data.notifications;
+                    this.renderNotifications();
+                    this.updateUnreadCount();
+                    // Show toast only for new notifications
+                    const newNotifications = this.notifications.filter(n => !prevIds.includes(n.id) && !n.read);
+                    if (newNotifications.length > 0) {
+                        this.showToast(newNotifications[0]);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch notifications:', error);
+                }
+            }
+            async checkForNewNotifications() {
+                try {
+                    await fetch('/api/notifications/unread-count');
+                    this.fetchNotifications();
+                } catch (error) {
+                    console.error('Failed to check for new notifications:', error);
+                }
+            }
+            renderNotifications() {
+                this.list.innerHTML = '';
+                if (this.notifications.length === 0) {
+                    this.empty.style.display = 'block';
+                } else {
+                    this.empty.style.display = 'none';
+                    this.notifications.forEach(notification => {
+                        const item = this.createNotificationItem(notification);
+                        this.list.appendChild(item);
+                    });
+                }
+            }
+            createNotificationItem(notification) {
+                const item = document.createElement('li');
+                item.className = `notification-item ${notification.read ? 'read' : 'unread'}`;
+                item.dataset.id = notification.id;
+                const typeIcon = notification.icon || {
+                    "info": "📋",
+                    "success": "✅",
+                    "warning": "⚠️",
+                    "danger": "🔴"
+                }[notification.type] || "📋";
+                item.innerHTML = `
+                    <div class="notification-icon ${notification.type}">${typeIcon}</div>
+                    <div class="notification-content">
+                        <div class="notification-title">${notification.title}</div>
+                        <div class="notification-message">${notification.message}</div>
+                        <div class="notification-time">${notification.time}</div>
+                    </div>
+                    <div class="notification-actions">
+                        <button class="toggle-read-btn" title="${notification.read ? 'Mark as unread' : 'Mark as read'}">${notification.read ? '📩' : '✓'}</button>
+                        <button class="delete-btn" title="Delete">🗑️</button>
+                    </div>
+                `;
+                const toggleReadBtn = item.querySelector('.toggle-read-btn');
+                const deleteBtn = item.querySelector('.delete-btn');
+                toggleReadBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.toggleRead(notification.id);
+                });
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.deleteNotification(notification.id);
+                });
+                item.addEventListener('click', () => {
+                    if (!notification.read) {
+                        this.markAsRead(notification.id);
+                    }
+                });
+                return item;
+            }
+            addNotification(notification, showToast = false) {
+                this.notifications.unshift(notification);
+                this.renderNotifications();
+                this.updateUnreadCount();
+                if (showToast) {
+                    this.showToast(notification);
+                }
+            }
+            showToast(notification) {
+                const toast = document.createElement('div');
+                toast.className = `toast toast-${notification.type}`;
+                toast.innerHTML = `
+                    <div class="toast-header">
+                        <div class="toast-title">
+                            <span class="toast-icon">${notification.icon}</span>
+                            ${notification.title}
+                        </div>
+                        <button class="toast-close">&times;</button>
+                    </div>
+                    <div class="toast-body">
+                        ${notification.message}
+                    </div>
+                    <div class="toast-actions">
+                        <button class="toast-secondary">Dismiss</button>
+                        <button class="toast-primary">View</button>
+                    </div>
+                `;
+                this.toastContainer.appendChild(toast);
+                const closeBtn = toast.querySelector('.toast-close');
+                const dismissBtn = toast.querySelector('.toast-secondary');
+                const viewBtn = toast.querySelector('.toast-primary');
+                const closeToast = () => {
+                    toast.classList.add('hide');
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 300);
+                };
+                closeBtn.addEventListener('click', closeToast);
+                dismissBtn.addEventListener('click', closeToast);
+                viewBtn.addEventListener('click', () => {
+                    this.showPanel();
+                    closeToast();
+                });
+                setTimeout(closeToast, 5000);
+            }
+            async markAsRead(id) {
+                try {
+                    await fetch(`/api/notifications/${id}/read`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const notification = this.notifications.find(n => n.id === id);
+                    if (notification && !notification.read) {
+                        notification.read = true;
+                        this.renderNotifications();
+                        this.updateUnreadCount();
+                    }
+                } catch (error) {
+                    console.error('Failed to mark notification as read:', error);
+                    const notification = this.notifications.find(n => n.id === id);
+                    if (notification && !notification.read) {
+                        notification.read = true;
+                        this.renderNotifications();
+                        this.updateUnreadCount();
+                    }
+                }
+            }
+            toggleRead(id) {
+                const notification = this.notifications.find(n => n.id === id);
+                if (notification) {
+                    notification.read = !notification.read;
+                    this.renderNotifications();
+                    this.updateUnreadCount();
+                }
+            }
+            async markAllAsRead() {
+                try {
+                    await fetch('/api/notifications/mark-all-read', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    this.notifications.forEach(notification => {
+                        notification.read = true;
+                    });
+                    this.renderNotifications();
+                    this.updateUnreadCount();
+                } catch (error) {
+                    console.error('Failed to mark all as read:', error);
+                    this.notifications.forEach(notification => {
+                        notification.read = true;
+                    });
+                    this.renderNotifications();
+                    this.updateUnreadCount();
+                }
+            }
+            async deleteNotification(id) {
+                try {
+                    await fetch(`/api/notifications/${id}`, {
+                        method: 'DELETE'
+                    });
+                    const index = this.notifications.findIndex(n => n.id === id);
+                    if (index !== -1) {
+                        this.notifications.splice(index, 1);
+                        this.renderNotifications();
+                        this.updateUnreadCount();
+                    }
+                } catch (error) {
+                    console.error('Failed to delete notification:', error);
+                    const index = this.notifications.findIndex(n => n.id === id);
+                    if (index !== -1) {
+                        this.notifications.splice(index, 1);
+                        this.renderNotifications();
+                        this.updateUnreadCount();
+                    }
+                }
+            }
+            updateUnreadCount() {
+                this.unreadCount = this.notifications.filter(n => !n.read).length;
+                this.badge.textContent = this.unreadCount;
+                this.count.textContent = this.unreadCount;
+                if (this.unreadCount > 0) {
+                    this.badge.style.display = 'flex';
+                } else {
+                    this.badge.style.display = 'none';
+                }
+            }
+            viewAllNotifications() {
+                alert('This would show all notifications in a full page view');
+            }
+        }
+
+        // Initialize the notification system
+        let notificationSystem;
+        document.addEventListener('DOMContentLoaded', function() {
+            notificationSystem = new NotificationSystem();
+            notificationSystem.fetchNotifications();
+        });
+        
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const ticketModal = document.getElementById('ticketModal');
+            const analyticsModal = document.getElementById('analyticsModal');
+            const adminProfileModal = document.getElementById('adminProfileModal');
+            
+            if (event.target === ticketModal) {
+                ticketModal.style.display = 'none';
+            }
+            if (event.target === analyticsModal) {
+                analyticsModal.style.display = 'none';
+            }
+            if (event.target === adminProfileModal) {
+                adminProfileModal.style.display = 'none';
+            }
+        }
+        
+        // Auto-refresh dashboard every 60 seconds
+        setInterval(function() {
+            if (document.visibilityState === 'visible') {
+                // Silently refresh stats without full page reload
+                fetch('/api/stats')
+                    .then(response => response.json())
+                    .then(data => {
+                        // Update stat numbers
+                        const statNumbers = document.querySelectorAll('.stat-number');
+                        if (statNumbers.length >= 4) {
+                            statNumbers[0].textContent = data.total_complaints;
+                            statNumbers[1].textContent = data.open_complaints;
+                            statNumbers[2].textContent = data.resolved_complaints;
+                            const rate = data.total_complaints > 0 ? 
+                                ((data.resolved_complaints / data.total_complaints) * 100).toFixed(1) : 0;
+                            statNumbers[3].textContent = rate + '%';
+                        }
+                    })
+                    .catch(error => console.log('Auto-refresh failed:', error));
+            }
+        }, 60000);
+        
+        // Initialize page functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Admin dashboard loaded');
+            
+            // Add click handler for profile dropdown
+            const profileTrigger = document.getElementById('profileTrigger');
+            if (profileTrigger) {
+                console.log('Profile trigger found, adding event listener');
+                
+                // Remove any existing listeners and add new one
+                profileTrigger.removeEventListener('click', handleProfileTriggerClick);
+                profileTrigger.addEventListener('click', handleProfileTriggerClick);
+            } else {
+                console.error('Profile trigger not found');
+            }
+            
+            // Add event listener for profile details link
+            const profileDetailsLink = document.getElementById('profileDetailsLink');
+            if (profileDetailsLink) {
+                console.log('Profile details link found, adding event listener');
+                profileDetailsLink.removeEventListener('click', handleProfileDetailsClick);
+                profileDetailsLink.addEventListener('click', handleProfileDetailsClick);
+            }
+            
+            // Global click handler to close dropdown
+            document.addEventListener('click', function(e) {
+                const dropdown = document.querySelector('.profile-dropdown');
+                if (dropdown && !dropdown.contains(e.target)) {
+                    dropdown.classList.remove('active');
+                    console.log('Dropdown closed by global click handler');
+                }
+            });
+            
+            // Prevent dropdown close when clicking inside dropdown content
+            const dropdownContent = document.querySelector('.profile-dropdown-content');
+            if (dropdownContent) {
+                dropdownContent.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            }
+        });
+        
+        // Separate event handlers to avoid conflicts
+        function handleProfileTriggerClick(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Profile trigger clicked via event listener');
+            toggleProfileDropdown(e);
+        }
+        
+        function handleProfileDetailsClick(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Profile details link clicked via event listener');
+            showProfileDetails(e);
+        }
+    </script>
+</body>
+</html>

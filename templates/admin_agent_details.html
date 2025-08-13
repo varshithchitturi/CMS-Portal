@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ agent.name }} - Agent Details</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="header">
+        <nav class="nav">
+            <a href="{{ url_for('admin_dashboard') }}" class="logo">⚡ IntelliSupport Admin</a>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a></li>
+                <li><a href="{{ url_for('admin_agents') }}" class="active">Agent Management</a></li>
+                <li>
+                    <button id="notificationToggle" class="notification-toggle">
+                        🔔 <span class="badge" id="notificationBadge">0</span>
+                    </button>
+                </li>
+                <li class="profile-dropdown">
+                    <div class="profile-trigger" id="profileTrigger">
+                        <div class="profile-avatar admin-avatar">{{ session.full_name[0].upper() }}</div>
+                        <span class="profile-name admin-name">{{ session.full_name.split()[0] }}</span>
+                        <i class="dropdown-arrow">▼</i>
+                    </div>
+                    <div class="profile-dropdown-content" id="profileDropdown">
+                        <div class="profile-header admin-header">
+                            <div class="profile-avatar-large admin-avatar-large">{{ session.full_name[0].upper() }}</div>
+                            <div class="profile-info">
+                                <h4>{{ session.full_name }}</h4>
+                                <p>{{ session.email }}</p>
+                                <span class="admin-badge">Administrator</span>
+                            </div>
+                        </div>
+                        <div class="profile-menu">
+                            <a href="#" id="profileDetailsLink">👤 Admin Profile</a>
+                            <a href="{{ url_for('admin_dashboard') }}">⚡ Admin Dashboard</a>
+                            <a href="{{ url_for('admin_agents') }}">👥 Agent Management</a>
+                            <div class="profile-divider"></div>
+                            <a href="{{ url_for('logout') }}" class="logout-link">🚪 Logout</a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    
+    <!-- Notification Panel -->
+    <div id="notificationPanel" class="notification-panel">
+        <div class="notification-header">
+            <h3>🔔 Notifications <span class="notification-count" id="notificationCount">0</span></h3>
+            <div class="notification-actions">
+                <button id="markAllReadBtn">Mark all as read</button>
+                <button id="closeNotificationsBtn">✕</button>
+            </div>
+        </div>
+        <div class="notification-body">
+            <div id="notificationEmpty" class="notification-empty">
+                <div>📪</div>
+                <p>No new notifications</p>
+            </div>
+            <ul class="notification-list" id="notificationList">
+                <!-- Notifications will be added here dynamically -->
+            </ul>
+        </div>
+        <div class="notification-footer">
+            <a href="#" id="viewAllNotificationsLink">View all notifications</a>
+        </div>
+    </div>
+    
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container">
+        <!-- Toast notifications will be added here dynamically -->
+    </div>
+    
+    <!-- Admin Profile Modal -->
+    <div id="adminProfileModal" class="modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>👨‍💼 Administrator Profile</h3>
+                <span class="close" onclick="hideAdminProfile()">&times;</span>
+            </div>
+            <div class="profile-details">
+                <div class="profile-section">
+                    <div class="profile-avatar-xl admin-avatar-xl" id="adminProfileAvatar">{{ session.full_name[0].upper() }}</div>
+                    <h3 id="adminProfileFullName">{{ session.full_name }}</h3>
+                    <p style="color: #666;" id="adminProfileMemberSince">Administrator</p>
+                </div>
+                
+                <div class="profile-info-grid">
+                    <div class="info-item">
+                        <label>👤 Username</label>
+                        <p id="adminProfileUsername">{{ session.full_name }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>📧 Email Address</label>
+                        <p id="adminProfileEmail">{{ session.email }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>🏠 Full Name</label>
+                        <p id="adminProfileDisplayName">{{ session.full_name }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>📱 Phone Number</label>
+                        <p id="adminProfilePhone">Not Available</p>
+                    </div>
+                    <div class="info-item">
+                        <label>🔐 Access Level</label>
+                        <p><span class="admin-badge">Administrator</span></p>
+                    </div>
+                    <div class="info-item">
+                        <label>🆔 Admin ID</label>
+                        <p>{{ session.user_id }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+
+    <div class="container">
+        <!-- Agent Profile -->
+        <div class="card">
+            <div class="card-header">
+                <div class="agent-profile-header">
+                    <div class="agent-avatar-large">
+                        {{ agent.name.split()[0][0] }}{{ agent.name.split()[-1][0] }}
+                    </div>
+                    <div class="agent-profile-info">
+                        <h2 class="agent-name">{{ agent.name }}</h2>
+                        <div class="agent-specialization">{{ agent.specialization }}</div>
+                        <div class="agent-status status-{{ agent.status.lower() }}">{{ agent.status }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="agent-details-grid">
+                <div class="detail-section">
+                    <h3>📋 Professional Details</h3>
+                    <div class="detail-item">
+                        <strong>Specialization:</strong> {{ agent.specialization }}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Email:</strong> {{ agent.email }}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Phone:</strong> {{ agent.phone }}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Status:</strong> {{ agent.status }}
+                    </div>
+                </div>
+                
+                <div class="detail-section">
+                    <h3>📊 Performance Metrics</h3>
+                    <div class="performance-metrics">
+                        <div class="metric-card">
+                            <div class="metric-value">{{ agent.assigned_tickets }}</div>
+                            <div class="metric-label">Active Tickets</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">{{ tickets|length }}</div>
+                            <div class="metric-label">Total Assigned</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">
+                                {% set resolved_count = tickets|selectattr("status", "equalto", "Resolved")|list|length %}
+                                {{ resolved_count }}
+                            </div>
+                            <div class="metric-label">Resolved</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">
+                                {% if tickets|length > 0 %}
+                                    {{ "%.1f"|format((resolved_count / tickets|length) * 100) }}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </div>
+                            <div class="metric-label">Success Rate</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="agent-description-section">
+                <h3>👤 About {{ agent.name.split()[0] }}</h3>
+                <p class="agent-description">{{ agent.description }}</p>
+            </div>
+        </div>
+
+        <!-- Assigned Tickets -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">🎫 Assigned Tickets</h3>
+                <div class="card-actions">
+                    <button class="btn btn-primary" onclick="showResponseModal()">📝 Send Response</button>
+                    <button class="btn btn-secondary" onclick="refreshTickets()">🔄 Refresh</button>
+                </div>
+            </div>
+            
+            {% if tickets %}
+            <div class="table-container">
+                <table class="complaints-table">
+                    <thead>
+                        <tr>
+                            <th>Ticket ID</th>
+                            <th>Customer</th>
+                            <th>Issue</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets %}
+                        <tr class="priority-{{ ticket.priority.lower() }}" data-ticket-id="{{ ticket.ticket_id }}">
+                            <td>
+                                <strong>{{ ticket.ticket_id }}</strong>
+                            </td>
+                            <td>
+                                <div class="customer-info">
+                                    <div class="customer-name">{{ ticket.full_name }}</div>
+                                    <div class="customer-email">{{ ticket.email }}</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="ticket-issue">
+                                    <div class="issue-title">{{ ticket.title }}</div>
+                                    <div class="issue-preview">{{ ticket.description[:100] }}...</div>
+                                    <span class="category-badge category-{{ ticket.category.lower() }}">{{ ticket.category }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="priority-badge priority-{{ ticket.priority.lower() }}">
+                                    {% if ticket.priority == 'Urgent' %}🔴
+                                    {% elif ticket.priority == 'High' %}🟠
+                                    {% elif ticket.priority == 'Medium' %}🟡
+                                    {% else %}🟢{% endif %}
+                                    {{ ticket.priority }}
+                                </span>
+                            </td>
+                            <td>
+                                <select class="status-select" onchange="updateTicketStatus('{{ ticket.ticket_id }}', this.value)">
+                                    <option value="Registered" {% if ticket.status == 'Registered' %}selected{% endif %}>Registered</option>
+                                    <option value="In Progress" {% if ticket.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                    <option value="Under Review" {% if ticket.status == 'Under Review' %}selected{% endif %}>Under Review</option>
+                                    <option value="Resolved" {% if ticket.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                                </select>
+                            </td>
+                            <td>
+                                <div class="date-info">
+                                    <div class="created-date">{{ ticket.created_at.split(' ')[0] }}</div>
+                                    <div class="created-time">{{ ticket.created_at.split(' ')[1] }}</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-primary" onclick="viewTicketDetails('{{ ticket.ticket_id }}')">
+                                        👁️ View
+                                    </button>
+                                    <button class="btn btn-sm btn-success" onclick="respondToTicket('{{ ticket.ticket_id }}', '{{ ticket.title }}')">
+                                        💬 Respond
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">📭</div>
+                <h3>No Assigned Tickets</h3>
+                <p>{{ agent.name }} currently has no assigned tickets.</p>
+                <button class="btn btn-primary" onclick="assignNewTicket()">Assign New Ticket</button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Response Modal -->
+    <div id="responseModal" class="modal">
+        <div class="modal-content modal-responsive">
+            <div class="modal-header">
+                <h3>📝 Send Response to Customer</h3>
+                <span class="close" onclick="closeModal('responseModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="response-form">
+                    <div class="form-row">
+                        <div class="form-group half-width">
+                            <label class="form-label">Ticket ID:</label>
+                            <input type="text" id="responseTicketId" class="form-control" readonly>
+                        </div>
+                        
+                        <div class="form-group half-width">
+                            <label class="form-label">Response Type:</label>
+                            <select id="responseType" class="form-control">
+                                <option value="Update">Status Update</option>
+                                <option value="Solution">Solution Provided</option>
+                                <option value="Request">Information Request</option>
+                                <option value="Resolution">Final Resolution</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Issue Title:</label>
+                        <input type="text" id="responseTicketTitle" class="form-control" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Response Message: <small>(Markdown supported)</small></label>
+                        <textarea id="responseText" class="form-control response-textarea" rows="6" 
+                                  placeholder="Write your response here... You can use markdown formatting:
+
+**Bold text** | *Italic text* | `Code blocks`
+- Bullet points | 1. Numbered lists
+
+Example response:
+Dear Valued Customer,
+
+Thank you for contacting our support team. I have reviewed your issue and here's my analysis:
+
+**Issue Summary:**
+- Issue identified and analyzed
+- Root cause determined
+
+**Recommended Solution:**
+1. Follow these steps carefully
+2. Test the solution
+3. Contact us if issue persists
+
+**Next Steps:**
+I will monitor your case for 24 hours to ensure resolution.
+
+Best regards,
+{{ agent.name }}
+{{ agent.specialization }}"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Live Preview:</label>
+                        <div id="responsePreview" class="response-preview-container"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="sendResponse()">📤 Send Response</button>
+                <button class="btn btn-secondary" onclick="previewResponse()">👁️ Refresh Preview</button>
+                <button class="btn btn-secondary" onclick="closeModal('responseModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function viewTicketDetails(ticketId) {
+            window.location.href = `/ticket/${ticketId}`;
+        }
+
+        function respondToTicket(ticketId, ticketTitle) {
+            document.getElementById('responseTicketId').value = ticketId;
+            document.getElementById('responseTicketTitle').value = ticketTitle;
+            document.getElementById('responseText').value = '';
+            document.getElementById('responsePreview').innerHTML = '';
+            document.getElementById('responseModal').style.display = 'block';
+        }
+
+        function showResponseModal() {
+            document.getElementById('responseModal').style.display = 'block';
+        }
+
+        function previewResponse() {
+            const responseText = document.getElementById('responseText').value;
+            
+            // Simple markdown preview (you can enhance this)
+            let html = responseText
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code>$1</code>')
+                .replace(/\n/g, '<br>');
+            
+            document.getElementById('responsePreview').innerHTML = html;
+        }
+
+        async function sendResponse() {
+            const ticketId = document.getElementById('responseTicketId').value;
+            const responseText = document.getElementById('responseText').value;
+            const responseType = document.getElementById('responseType').value;
+            const ticketTitle = document.getElementById('responseTicketTitle').value;
+            
+            if (!ticketId || !responseText.trim()) {
+                showNotification('Please fill in all required fields', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch('/admin/agent_response', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ticket_id: ticketId,
+                        agent_id: {{ agent.id }},
+                        response_text: responseText,
+                        response_type: responseType
+                    })
+                });
+
+                let result;
+                try {
+                    result = await response.json();
+                } catch (jsonError) {
+                    // If response is not valid JSON, show error
+                    showNotification('Error balancing workload: Invalid server response', 'error');
+                    console.error('Error balancing workload: Invalid server response', jsonError);
+                    return;
+                }
+                if (result.success) {
+                    showNotification('Response sent successfully!', 'success');
+                    
+                    // Add notification to the notification system
+                    if (notificationSystem) {
+                        const notificationType = responseType === 'Resolution' ? 'success' : 'info';
+                        notificationSystem.addSystemNotification(
+                            'Response Sent',
+                            `Response for ticket #${ticketId} (${ticketTitle}) has been sent to customer`,
+                            notificationType
+                        );
+                    }
+                    
+                    closeModal('responseModal');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showNotification('Failed to send response', 'error');
+                }
+            } catch (error) {
+                console.error('Error sending response:', error);
+                showNotification('Error sending response', 'error');
+            }
+        }
+
+        async function updateTicketStatus(ticketId, newStatus) {
+            try {
+                const response = await fetch('/admin/update_ticket', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ticket_id: ticketId,
+                        status: newStatus,
+                        assigned_to: '{{ agent.name }}'
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('Ticket status updated successfully!', 'success');
+                    
+                    // Add notification to the notification system
+                    if (notificationSystem) {
+                        const notificationType = newStatus === 'Resolved' ? 'success' : 'info';
+                        notificationSystem.addSystemNotification(
+                            'Ticket Status Updated',
+                            `Ticket #${ticketId} status changed to ${newStatus}`,
+                            notificationType
+                        );
+                    }
+                } else {
+                    showNotification('Failed to update ticket status', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating ticket status:', error);
+                showNotification('Error updating ticket status', 'error');
+            }
+        }
+
+        function refreshTickets() {
+            location.reload();
+        }
+
+        function assignNewTicket() {
+            window.location.href = '/admin/agents';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        function showProfileDetails() {
+            document.getElementById('adminProfileModal').style.display = 'block';
+            document.querySelector('.profile-dropdown').classList.remove('active');
+        }
+        
+        function hideAdminProfile() {
+            document.getElementById('adminProfileModal').style.display = 'none';
+        }
+        
+        // Profile dropdown functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const profileTrigger = document.getElementById('profileTrigger');
+            const profileDropdown = document.getElementById('profileDropdown');
+            const profileDetailsLink = document.getElementById('profileDetailsLink');
+            
+            function toggleProfileDropdown(event) {
+                if (event) {
+                    event.stopPropagation();
+                }
+                const dropdown = document.querySelector('.profile-dropdown');
+                dropdown.classList.toggle('active');
+            }
+            
+            // Toggle dropdown on click
+            if (profileTrigger) {
+                profileTrigger.addEventListener('click', toggleProfileDropdown);
+            }
+            
+            // Handle profile details
+            if (profileDetailsLink) {
+                profileDetailsLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showProfileDetails();
+                });
+            }
+            
+            // Close when clicking outside
+            document.addEventListener('click', function(event) {
+                const dropdown = document.querySelector('.profile-dropdown');
+                if (dropdown && dropdown.classList.contains('active') && 
+                    !dropdown.contains(event.target)) {
+                    dropdown.classList.remove('active');
+                }
+            });
+            
+            // Close modal when clicking outside
+            window.onclick = function(event) {
+                const modals = document.getElementsByClassName('modal');
+                for (let modal of modals) {
+                    if (event.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                }
+            };
+        });
+        
+        // Real-time response preview
+        document.getElementById('responseText').addEventListener('input', previewResponse);
+        
+        // Notification System
+        class NotificationSystem {
+            constructor() {
+                this.notifications = [];
+                this.unreadCount = 0;
+                this.panel = document.getElementById('notificationPanel');
+                this.toggle = document.getElementById('notificationToggle');
+                this.badge = document.getElementById('notificationBadge');
+                this.list = document.getElementById('notificationList');
+                this.count = document.getElementById('notificationCount');
+                this.empty = document.getElementById('notificationEmpty');
+                this.markAllReadBtn = document.getElementById('markAllReadBtn');
+                this.closeBtn = document.getElementById('closeNotificationsBtn');
+                this.toastContainer = document.getElementById('toastContainer');
+                this.viewAllLink = document.getElementById('viewAllNotificationsLink');
+                
+                this.setupEventListeners();
+                this.loadNotifications();
+                
+                // Poll for new notifications every 30 seconds
+                setInterval(() => this.checkForNewNotifications(), 30000);
+            }
+            
+            setupEventListeners() {
+                this.toggle.addEventListener('click', () => this.togglePanel());
+                this.closeBtn.addEventListener('click', () => this.hidePanel());
+                this.markAllReadBtn.addEventListener('click', () => this.markAllAsRead());
+                this.viewAllLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.viewAllNotifications();
+                });
+                
+                // Close panel when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (this.panel.classList.contains('show') && 
+                        !this.panel.contains(e.target) && 
+                        e.target !== this.toggle) {
+                        this.hidePanel();
+                    }
+                });
+            }
+            
+            togglePanel() {
+                if (this.panel.classList.contains('show')) {
+                    this.hidePanel();
+                } else {
+                    this.showPanel();
+                }
+            }
+            
+            showPanel() {
+                this.panel.classList.add('show');
+            }
+            
+            hidePanel() {
+                this.panel.classList.remove('show');
+            }
+            
+            async loadNotifications() {
+                // Simulate loading notifications
+                // In a real application, you would fetch from server:
+                // const response = await fetch('/api/notifications');
+                // this.notifications = await response.json();
+                
+                // Mock notifications for demo
+                this.notifications = [
+                    {
+                        id: 1,
+                        title: "New ticket assigned",
+                        message: "Ticket #12345 has been assigned to {{ agent.name }}",
+                        time: "15 minutes ago",
+                        type: "info",
+                        read: false,
+                        icon: "📋"
+                    },
+                    {
+                        id: 2,
+                        title: "Status update",
+                        message: "Ticket #12340 was marked as 'In Progress'",
+                        time: "1 hour ago",
+                        type: "success",
+                        read: false,
+                        icon: "🔄"
+                    },
+                    {
+                        id: 3,
+                        title: "Customer feedback",
+                        message: "Customer rated their experience as 5/5 stars",
+                        time: "3 hours ago",
+                        type: "success",
+                        read: true,
+                        icon: "⭐"
+                    },
+                    {
+                        id: 4,
+                        title: "Urgent ticket",
+                        message: "New urgent ticket #12350 requires immediate attention",
+                        time: "5 hours ago",
+                        type: "danger",
+                        read: true,
+                        icon: "🔴"
+                    },
+                ];
+                
+                this.renderNotifications();
+                this.updateUnreadCount();
+            }
+            
+            async fetchNotifications() {
+                try {
+                    const response = await fetch('/api/notifications');
+                    const data = await response.json();
+                    // Track previous notification IDs
+                    const prevIds = this.notifications ? this.notifications.map(n => n.id) : [];
+                    this.notifications = data.notifications;
+                    this.renderNotifications();
+                    this.updateUnreadCount();
+                    // Show toast only for new notifications
+                    const newNotifications = this.notifications.filter(n => !prevIds.includes(n.id) && !n.read);
+                    if (newNotifications.length > 0) {
+                        // Only show toast for the most recent new notification
+                        this.showToast(newNotifications[0]);
+                    }
+                } catch (error) {
+                    // For demo, simulate a new notification occasionally
+                    const shouldAddNotification = Math.random() > 0.7;
+                    if (shouldAddNotification) {
+                        const newId = this.notifications.length + 1;
+                        const types = ["info", "success", "warning", "danger"];
+                        const randomType = types[Math.floor(Math.random() * types.length)];
+                        const icons = {
+                            "info": "📋",
+                            "success": "✅",
+                            "warning": "⚠️",
+                            "danger": "🔴"
+                        };
+                        const newNotification = {
+                            id: newId + 100,
+                            title: "New notification",
+                            message: `This is a simulated ${randomType} notification`,
+                            time: "Just now",
+                            type: randomType,
+                            read: false,
+                            icon: icons[randomType]
+                        };
+                        this.addNotification(newNotification, true);
+                    }
+                }
+            }
+            
+            renderNotifications() {
+                this.list.innerHTML = '';
+                
+                if (this.notifications.length === 0) {
+                    this.empty.style.display = 'block';
+                } else {
+                    this.empty.style.display = 'none';
+                    
+                    this.notifications.forEach(notification => {
+                        const item = this.createNotificationElement(notification);
+                        this.list.appendChild(item);
+                    });
+                }
+            }
+            
+            createNotificationElement(notification) {
+                const item = document.createElement('li');
+                item.className = `notification-item${notification.read ? '' : ' unread'}`;
+                item.dataset.id = notification.id;
+                
+                item.innerHTML = `
+                    <div class="notification-icon ${notification.type}">
+                        ${notification.icon}
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-title">${notification.title}</div>
+                        <div class="notification-message">${notification.message}</div>
+                        <span class="notification-time">${notification.time}</span>
+                    </div>
+                    <div class="notification-actions-menu">
+                        <button class="mark-read-btn" title="Mark as ${notification.read ? 'unread' : 'read'}">
+                            ${notification.read ? '📪' : '📭'}
+                        </button>
+                        <button class="delete-notification-btn" title="Delete">🗑️</button>
+                    </div>
+                `;
+                
+                // Add event listeners
+                const markReadBtn = item.querySelector('.mark-read-btn');
+                const deleteBtn = item.querySelector('.delete-notification-btn');
+                
+                markReadBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.toggleRead(notification.id);
+                });
+                
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.deleteNotification(notification.id);
+                });
+                
+                // Click anywhere on notification to mark as read
+                item.addEventListener('click', () => {
+                    if (!notification.read) {
+                        this.markAsRead(notification.id);
+                    }
+                });
+                
+                return item;
+            }
+            
+            addNotification(notification, showToast = false) {
+                this.notifications.unshift(notification); // Add to beginning of array
+                
+                // Update UI
+                this.renderNotifications();
+                this.updateUnreadCount();
+                
+                if (showToast) {
+                    this.showToast(notification);
+                }
+            }
+            
+            showToast(notification) {
+                const toast = document.createElement('div');
+                toast.className = `toast toast-${notification.type}`;
+                
+                toast.innerHTML = `
+                    <div class="toast-header">
+                        <div class="toast-title">
+                            <span class="toast-icon">${notification.icon}</span>
+                            ${notification.title}
+                        </div>
+                        <button class="toast-close">&times;</button>
+                    </div>
+                    <div class="toast-body">
+                        ${notification.message}
+                    </div>
+                    <div class="toast-actions">
+                        <button class="toast-secondary">Dismiss</button>
+                        <button class="toast-primary">View</button>
+                    </div>
+                `;
+                
+                this.toastContainer.appendChild(toast);
+                
+                // Add event listeners
+                const closeBtn = toast.querySelector('.toast-close');
+                const dismissBtn = toast.querySelector('.toast-secondary');
+                const viewBtn = toast.querySelector('.toast-primary');
+                
+                const closeToast = () => {
+                    toast.classList.add('hide');
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 300);
+                };
+                
+                closeBtn.addEventListener('click', closeToast);
+                dismissBtn.addEventListener('click', closeToast);
+                
+                viewBtn.addEventListener('click', () => {
+                    this.showPanel();
+                    closeToast();
+                });
+                
+                // Auto-close after 5 seconds
+                setTimeout(closeToast, 5000);
+            }
+            
+            markAsRead(id) {
+                const notification = this.notifications.find(n => n.id === id);
+                if (notification && !notification.read) {
+                    notification.read = true;
+                    this.renderNotifications();
+                    this.updateUnreadCount();
+                }
+            }
+            
+            toggleRead(id) {
+                const notification = this.notifications.find(n => n.id === id);
+                if (notification) {
+                    notification.read = !notification.read;
+                    this.renderNotifications();
+                    this.updateUnreadCount();
+                }
+            }
+            
+            markAllAsRead() {
+                this.notifications.forEach(notification => {
+                    notification.read = true;
+                });
+                this.renderNotifications();
+                this.updateUnreadCount();
+                showNotification('All notifications marked as read', 'success');
+            }
+            
+            deleteNotification(id) {
+                const index = this.notifications.findIndex(n => n.id === id);
+                if (index !== -1) {
+                    this.notifications.splice(index, 1);
+                    this.renderNotifications();
+                    this.updateUnreadCount();
+                    showNotification('Notification deleted', 'success');
+                }
+            }
+            
+            updateUnreadCount() {
+                this.unreadCount = this.notifications.filter(n => !n.read).length;
+                this.badge.textContent = this.unreadCount;
+                this.count.textContent = this.unreadCount;
+                
+                // Show/hide badge based on unread count
+                if (this.unreadCount > 0) {
+                    this.badge.style.display = 'flex';
+                } else {
+                    this.badge.style.display = 'none';
+                }
+            }
+            
+            viewAllNotifications() {
+                // In a real app, this would navigate to a full notification page
+                alert('This would show all notifications in a full page view');
+            }
+            
+            // Public method to add a notification from outside
+            addSystemNotification(title, message, type = 'info') {
+                const icons = {
+                    "info": "📋",
+                    "success": "✅",
+                    "warning": "⚠️",
+                    "danger": "🔴"
+                };
+                
+                const notification = {
+                    id: Date.now(), // Unique ID based on timestamp
+                    title: title,
+                    message: message,
+                    time: "Just now",
+                    type: type,
+                    read: false,
+                    icon: icons[type]
+                };
+                
+                this.addNotification(notification, true);
+            }
+        }
+        
+        // Initialize the notification system when DOM is loaded
+        let notificationSystem;
+        document.addEventListener('DOMContentLoaded', function() {
+            notificationSystem = new NotificationSystem();
+            
+            // Example: Add notification when status is updated
+            const statusSelects = document.querySelectorAll('.status-select');
+            statusSelects.forEach(select => {
+                select.addEventListener('change', function(e) {
+                    const ticketId = this.closest('tr').dataset.ticketId;
+                    const status = this.value;
+                    
+                    // Add notification when status changes
+                    notificationSystem.addSystemNotification(
+                        'Ticket Status Updated',
+                        `Ticket #${ticketId} status changed to ${status}`,
+                        status === 'Resolved' ? 'success' : 'info'
+                    );
+                });
+            });
+        });
+        
+        // Function to trigger notifications programmatically
+        function pushNotification(title, message, type) {
+            if (notificationSystem) {
+                notificationSystem.addSystemNotification(title, message, type);
+            }
+        }
+    </script>
+</body>
+</html>
